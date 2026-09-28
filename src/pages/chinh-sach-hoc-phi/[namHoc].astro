@@ -1,0 +1,18 @@
+---
+// Past school years' fee tables: generated only when >= 2 approved fee files exist
+// (the newest is shown on /chinh-sach-hoc-phi/ itself). FeeTable arrives in WEB-07/09.
+import PageLayout from '../../layouts/PageLayout.astro';
+import { getPublished } from '../../lib/published';
+
+export async function getStaticPaths() {
+  const fees = (await getPublished('fees')).sort((a, b) =>
+    b.data.school_year.localeCompare(a.data.school_year));
+  return fees.slice(1).map((entry) => ({
+    params: { namHoc: entry.data.school_year }, props: { entry },
+  }));
+}
+const { entry } = Astro.props;
+---
+<PageLayout title={`Học phí năm học ${entry.data.school_year}`}>
+  <p><strong>Năm học đã qua.</strong></p>
+</PageLayout>

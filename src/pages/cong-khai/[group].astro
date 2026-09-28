@@ -1,0 +1,26 @@
+---
+// One page per disclosure group, always generated; shows "Đang cập nhật" when empty.
+import PageLayout from '../../layouts/PageLayout.astro';
+import { getPublished } from '../../lib/published';
+import { DISCLOSURE_GROUPS } from '../../lib/nav';
+
+export function getStaticPaths() {
+  return DISCLOSURE_GROUPS.map((g) => ({ params: { group: g.slug }, props: { label: g.label } }));
+}
+const { group } = Astro.params;
+const { label } = Astro.props;
+const items = (await getPublished('disclosure')).filter(
+  (d) => d.data.group === group && !d.data.superseded_by,
+);
+---
+<PageLayout title={label}>
+  {items.length === 0 ? (
+    <p>Đang cập nhật.</p>
+  ) : (
+    <ul>
+      {items.map((d) => (
+        <li>{d.data.title} (năm học {d.data.school_year}; công bố {d.data.published_at}; cập nhật {d.data.updated_at})</li>
+      ))}
+    </ul>
+  )}
+</PageLayout>

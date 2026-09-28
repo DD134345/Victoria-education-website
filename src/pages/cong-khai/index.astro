@@ -1,0 +1,11 @@
+---
+// Always generated: legal presence matters (TT 09/2024). Full layout in WEB-11 (section 6.8).
+import PageLayout from '../../layouts/PageLayout.astro';
+import { DISCLOSURE_GROUPS } from '../../lib/nav';
+---
+<PageLayout title="Công khai" description="Thông tin công khai theo Thông tư 09/2024/TT-BGDĐT.">
+  <ul>
+    {DISCLOSURE_GROUPS.map((g) => <li><a href={`/cong-khai/${g.slug}/`}>{g.label}</a></li>)}
+    <li><a href="/cong-khai/luu-tru/">Lưu trữ</a></li>
+  </ul>
+</PageLayout>

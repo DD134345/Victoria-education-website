@@ -1,0 +1,18 @@
+---
+// Always generated. Facts only from site-config.json; TODO-OWNER values are hidden,
+// never shown. No contact form here (hard rules R1, R4).
+import PageLayout from '../../layouts/PageLayout.astro';
+import { site, isPlaceholder } from '../../lib/site';
+
+const show = (v: unknown) => typeof v === 'string' && v.trim() !== '' && !isPlaceholder(v);
+const tel = show(site.hotline) ? String(site.hotline).replace(/[^\d+]/g, '') : '';
+---
+<PageLayout title="Liên hệ" description={`Địa chỉ, điện thoại và giờ làm việc của ${site.name}.`}>
+  <dl>
+    {show(site.address) && (<><dt>Địa chỉ</dt><dd>{site.address}</dd></>)}
+    {tel && (<><dt>Điện thoại</dt><dd><a href={`tel:${tel}`}>{site.hotline}</a></dd></>)}
+    {show(site.zalo) && (<><dt>Zalo</dt><dd><a href={String(site.zalo)} rel="noopener">Zalo OA</a></dd></>)}
+    {show(site.email) && (<><dt>Email</dt><dd><a href={`mailto:${site.email}`}>{site.email}</a></dd></>)}
+    {show(site.hours) && (<><dt>Giờ làm việc</dt><dd>{site.hours}</dd></>)}
+  </dl>
+</PageLayout>

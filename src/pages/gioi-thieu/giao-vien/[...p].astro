@@ -1,0 +1,9 @@
+---
+// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+import PageLayout from '../../../layouts/PageLayout.astro';
+import { onlyIf } from '../../../lib/nav';
+export const getStaticPaths = () => onlyIf('/gioi-thieu/giao-vien/');
+---
+<PageLayout title="Giáo viên của bé">
+  <p>Nội dung đang được cập nhật.</p>
+</PageLayout>

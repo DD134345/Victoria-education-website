@@ -1,0 +1,14 @@
+---
+// Superseded disclosure items are listed only here (kept >= 5 years).
+import PageLayout from '../../layouts/PageLayout.astro';
+import { getPublished } from '../../lib/published';
+
+const items = (await getPublished('disclosure')).filter((d) => !!d.data.superseded_by);
+---
+<PageLayout title="Lưu trữ công khai">
+  {items.length === 0 ? (
+    <p>Chưa có tài liệu lưu trữ.</p>
+  ) : (
+    <ul>{items.map((d) => <li>{d.data.title} ({d.data.school_year})</li>)}</ul>
+  )}
+</PageLayout>

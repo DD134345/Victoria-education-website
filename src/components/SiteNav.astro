@@ -1,0 +1,22 @@
+---
+// Minimal nav built from lib/nav.ts (hidden routes omitted). Styled header in WEB-07.
+import { buildNav } from '../lib/nav';
+const items = await buildNav();
+const here = Astro.url.pathname;
+---
+<nav aria-label="Menu chính" data-site-nav>
+  <ul>
+    {items.map((item) => (
+      <li>
+        <a href={item.href} aria-current={here === item.href ? 'page' : undefined}>{item.label}</a>
+        {item.children && (
+          <ul>
+            {item.children.map((c) => (
+              <li><a href={c.href} aria-current={here === c.href ? 'page' : undefined}>{c.label}</a></li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))}
+  </ul>
+</nav>
