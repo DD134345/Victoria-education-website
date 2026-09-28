@@ -1,0 +1,25 @@
+---
+// Sticky bottom bar on phones (WEB-07a): Gọi · Zalo · Đăng ký, 48px targets. Items without real data are omitted.
+import { site, isPlaceholder } from '../lib/site';
+import { isVisible } from '../lib/nav';
+
+const real = (v: unknown) => typeof v === 'string' && v.trim() !== '' && !isPlaceholder(v);
+const items = [
+  real(site.hotline) && { label: 'Gọi', href: `tel:${String(site.hotline).replace(/[^\d+]/g, '')}` },
+  real(site.zalo) && { label: 'Zalo', href: String(site.zalo) },
+  { label: 'Đăng ký', href: (await isVisible('/giao-duc-tuyen-sinh/dang-ky/')) ? '/giao-duc-tuyen-sinh/dang-ky/' : '/lien-he/' },
+].filter(Boolean) as { label: string; href: string }[];
+---
+<nav class="action-bar" aria-label="Liên hệ nhanh">
+  {items.map((i) => <a href={i.href}>{i.label}</a>)}
+</nav>
+
+<style>
+  .action-bar { position: fixed; inset: auto 0 0 0; display: flex; background: var(--brand-ink); z-index: 30;
+                padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -4px 16px rgb(0 0 0 / 0.12); }
+  .action-bar a { flex: 1; min-height: var(--tap); display: grid; place-items: center; color: #fff; font-weight: 600; text-decoration: none; }
+  .action-bar a:last-child { background: var(--accent-strong); }
+  @media (min-width: 768px) { .action-bar { display: none; } }
+  :global(body) { padding-bottom: calc(var(--tap) + env(safe-area-inset-bottom)); }
+  @media (min-width: 768px) { :global(body) { padding-bottom: 0; } }
+</style>

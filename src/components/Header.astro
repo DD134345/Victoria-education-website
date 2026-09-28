@@ -1,0 +1,81 @@
+---
+// Header + nav (WEB-07a). No JS: mobile menu uses a checkbox toggle, dropdowns use :hover/:focus-within.
+import { Image } from 'astro:assets';
+import logo from '../assets/brand/logo-newton-512.webp';
+import { buildNav, isVisible } from '../lib/nav';
+import { site, isPlaceholder } from '../lib/site';
+
+const items = await buildNav();
+const here = Astro.url.pathname;
+const hotline = !isPlaceholder(site.hotline) && site.hotline ? String(site.hotline) : '';
+const ctaHref = (await isVisible('/giao-duc-tuyen-sinh/dang-ky/')) ? '/giao-duc-tuyen-sinh/dang-ky/' : '/lien-he/';
+const current = (href: string) => (here === href ? 'page' : undefined);
+---
+<a class="skip-link" href="#main">Bỏ qua đến nội dung</a>
+<header class="site-header">
+  <div class="container bar">
+    <a class="brand" href="/" aria-label={`${site.name} – Trang chủ`}>
+      <Image src={logo} alt="" height={60} width={60} loading="eager" />
+      <span class="brand-name">{site.name}</span>
+    </a>
+    <div class="actions">
+      {hotline && <a class="hotline" href={`tel:${hotline.replace(/[^\d+]/g, '')}`}>{hotline}</a>}
+      <a class="cta" href={ctaHref}>Đăng ký tham quan</a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true" tabindex="-1" />
+      <label for="nav-toggle" class="burger" aria-label="Mở menu"><span></span></label>
+    </div>
+  </div>
+  <nav aria-label="Menu chính" data-site-nav class="nav">
+    <ul class="container menu">
+      {items.map((item) => (
+        <li class={item.children ? 'has-sub' : undefined}>
+          <a href={item.href} aria-current={current(item.href)}>{item.label}</a>
+          {item.children && (
+            <ul class="sub">
+              {item.children.map((c) => <li><a href={c.href} aria-current={current(c.href)}>{c.label}</a></li>)}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .site-header { background: var(--surface); border-bottom: 3px solid var(--brand-tint); position: relative; z-index: 20; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-height: 76px; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); text-decoration: none; color: var(--brand-ink); }
+  .brand img { height: 56px; width: auto; }
+  .brand-name { font-family: var(--font-heading); font-weight: 700; font-size: var(--text-lg); line-height: 1.15; display: none; }
+  .actions { display: flex; align-items: center; gap: var(--space-3); }
+  .hotline { display: none; font-weight: 600; color: var(--brand-ink); text-decoration: none; }
+  .cta { display: none; background: var(--accent-strong); color: #fff; text-decoration: none; font-weight: 600;
+         padding: var(--space-3) var(--space-6); border-radius: var(--radius-pill); min-height: var(--tap); align-items: center; }
+  .cta:hover { background: var(--accent-ink); color: #fff; }
+  .nav-toggle { position: absolute; opacity: 0; pointer-events: none; }
+  .burger { width: var(--tap); height: var(--tap); display: grid; place-items: center; cursor: pointer; border-radius: var(--radius-sm); }
+  .burger span, .burger span::before, .burger span::after { display: block; width: 24px; height: 3px; background: var(--brand-ink); border-radius: 2px; position: relative; }
+  .burger span::before, .burger span::after { content: ''; position: absolute; }
+  .burger span::before { top: -8px; } .burger span::after { top: 8px; }
+  .nav { background: var(--brand); display: none; }
+  .nav-toggle:checked ~ .burger { background: var(--brand-soft); }
+  .site-header:has(.nav-toggle:checked) .nav { display: block; }
+  .menu { list-style: none; margin: 0 auto; padding: var(--space-2) 0; }
+  .menu a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-4); color: #fff; text-decoration: none; font-weight: 500; }
+  .menu a:hover, .menu a[aria-current='page'] { background: var(--brand-ink); color: #fff; }
+  .sub { list-style: none; margin: 0; padding: 0 0 0 var(--space-4); }
+  @media (min-width: 768px) {
+    .brand-name, .hotline { display: inline; }
+    .cta { display: inline-flex; }
+  }
+  @media (min-width: 1100px) {
+    .burger { display: none; }
+    .nav { display: block; }
+    .menu { display: flex; flex-wrap: wrap; padding: 0; }
+    .menu > li { position: relative; }
+    .menu > li > a { padding: 0 var(--space-3); font-size: var(--text-sm); }
+    .sub { display: none; position: absolute; top: 100%; left: 0; min-width: 16rem; padding: var(--space-2) 0;
+           background: var(--brand-ink); border-radius: 0 0 var(--radius-sm) var(--radius-sm); box-shadow: var(--shadow); }
+    .has-sub:hover > .sub, .has-sub:focus-within > .sub { display: block; }
+  }
+</style>

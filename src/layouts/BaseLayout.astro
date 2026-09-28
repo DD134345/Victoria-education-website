@@ -1,7 +1,9 @@
 ---
 // Single HTML shell for every page (fixes X11: no duplicated <html> per page).
 import { isIndexable } from '../lib/site';
-import SiteNav from '../components/SiteNav.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileActionBar from '../components/MobileActionBar.astro';
 import '../styles/global.css';
 import { canonical, pageTitle, DEFAULT_DESCRIPTION } from '../lib/seo';
 
@@ -27,7 +29,9 @@ const canonicalURL = canonical(Astro.url.pathname, Astro.site);
     <link rel="sitemap" href="/sitemap-index.xml" />
   </head>
   <body>
-    <SiteNav />
-    <slot />
+    <Header />
+    <div id="main" class="page"><slot /></div>
+    <Footer />
+    <MobileActionBar />
   </body>
 </html>

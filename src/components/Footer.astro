@@ -1,0 +1,41 @@
+---
+// Footer (WEB-07a). Facts only from site-config.json; placeholders hidden.
+import { site, isPlaceholder } from '../lib/site';
+import { isVisible } from '../lib/nav';
+
+const show = (v: unknown) => typeof v === 'string' && v.trim() !== '' && !isPlaceholder(v);
+const privacy = await isVisible('/chinh-sach-bao-mat/');
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="container grid">
+    <div>
+      <p class="name">{site.name}</p>
+      <p class="badge">Thành viên Hệ thống Giáo dục Victoria</p>
+    </div>
+    <ul class="contact">
+      {show(site.address) && <li>{site.address}</li>}
+      {show(site.hotline) && <li><a href={`tel:${String(site.hotline).replace(/[^\d+]/g, '')}`}>{site.hotline}</a></li>}
+      {show(site.email) && <li><a href={`mailto:${site.email}`}>{site.email}</a></li>}
+      {show(site.hours) && <li>{site.hours}</li>}
+    </ul>
+    <ul class="links">
+      <li><a href="/cong-khai/">Công khai thông tin</a></li>
+      <li><a href="/lien-he/">Liên hệ</a></li>
+      {privacy && <li><a href="/chinh-sach-bao-mat/">Chính sách bảo mật</a></li>}
+    </ul>
+  </div>
+  <p class="container copy">© {year} {site.name}</p>
+</footer>
+
+<style>
+  .site-footer { background: var(--brand-ink); color: #fff; margin-top: var(--space-16); padding: var(--space-12) 0 var(--space-6); }
+  .grid { display: grid; gap: var(--space-8); }
+  .name { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: 700; margin-bottom: var(--space-3); }
+  .badge { display: inline-block; border: 2px solid #87a111; border-radius: var(--radius-pill); padding: var(--space-1) var(--space-4); font-size: var(--text-sm); }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+  a { color: #fff; }
+  a:hover { color: var(--brand-tint); }
+  .copy { margin-top: var(--space-8); font-size: var(--text-sm); color: var(--brand-tint); }
+  @media (min-width: 768px) { .grid { grid-template-columns: 2fr 2fr 1fr; } }
+</style>

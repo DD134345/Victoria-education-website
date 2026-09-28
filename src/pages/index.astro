@@ -10,7 +10,7 @@ const news = (await getPublished('news')).sort(
 );
 ---
 <BaseLayout>
-  <main>
+  <main class="container">
     <h1>{site.name}</h1>
     <p>Website đang được xây dựng.</p>
     {news.length > 0 && (
