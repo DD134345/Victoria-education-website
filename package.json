@@ -11,8 +11,9 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "verify": "astro check && astro build && node scripts/verify-approval.mjs && node scripts/verify-seo.mjs",
-    "verify:approval": "node scripts/verify-approval.mjs"
+    "verify": "astro check && astro build && node scripts/verify-approval.mjs && node scripts/verify-seo.mjs && node scripts/verify-libs.mjs",
+    "verify:approval": "node scripts/verify-approval.mjs",
+    "verify:libs": "node scripts/verify-libs.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.2.1",
