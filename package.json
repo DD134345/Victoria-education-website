@@ -9,12 +9,20 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check": "astro check",
+    "verify": "astro check && astro build && node scripts/verify-approval.mjs",
+    "verify:approval": "node scripts/verify-approval.mjs"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.2.1",
     "astro": "^7.3.4"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^5.9.3"
   }
 }
