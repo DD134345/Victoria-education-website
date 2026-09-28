@@ -1,0 +1,18 @@
+---
+// Inner-page layout: BaseLayout + exactly one H1 (the page title).
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  lang?: 'vi' | 'en';
+}
+
+const { title, description, lang } = Astro.props;
+---
+<BaseLayout title={title} description={description} lang={lang}>
+  <main>
+    <h1>{title}</h1>
+    <slot />
+  </main>
+</BaseLayout>

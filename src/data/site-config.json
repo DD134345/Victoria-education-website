@@ -1,0 +1,27 @@
+{
+  "name": "Trường Mầm non Newton Thanh Hà",
+  "legal_name": "TODO-OWNER",
+  "address": {
+    "street": "TODO-OWNER",
+    "ward": "TODO-OWNER",
+    "district": "TODO-OWNER",
+    "city": "Hà Nội",
+    "geo": {
+      "lat": 0,
+      "lng": 0
+    }
+  },
+  "hotline": "TODO-OWNER",
+  "zalo": "TODO-OWNER",
+  "email": "TODO-OWNER",
+  "hours": {
+    "start": "07:00",
+    "end": "17:30"
+  },
+  "founded": "TODO-OWNER",
+  "parent_organization": "TODO-OWNER",
+  "social": {
+    "facebook": "TODO-OWNER",
+    "instagram": "TODO-OWNER"
+  }
+}

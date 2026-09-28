@@ -1,0 +1,30 @@
+---
+// Single HTML shell for every page (fixes X11: no duplicated <html> per page).
+import { isIndexable } from '../lib/site';
+import { canonical, pageTitle, DEFAULT_DESCRIPTION } from '../lib/seo';
+
+interface Props {
+  title?: string;
+  description?: string;
+  lang?: 'vi' | 'en';
+}
+
+const { title, description = DEFAULT_DESCRIPTION, lang = 'vi' } = Astro.props;
+const canonicalURL = canonical(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle(title)}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    {!isIndexable && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

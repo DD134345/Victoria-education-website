@@ -1,39 +1,33 @@
 ---
-import { getCollection } from 'astro:content';
+// Homepage placeholder. The real homepage (section 6.6) is WEB-08.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPublished } from '../lib/published';
+import { site } from '../lib/site';
 
-// Only human-approved entries are ever rendered.
-const news = (await getCollection('news', ({ data }) => data.approved))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+// Only human-approved entries are ever rendered (hard rule 1).
+const news = (await getPublished('news')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
 ---
-
-<html lang="vi">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Victoria — Mầm non</title>
-  </head>
-  <body>
-    <!-- Placeholder. Design pass pending: run the web team with the design-taste-frontend skill. -->
-    <main>
-      <h1>Victoria — Mầm non</h1>
-      <p>Website đang được xây dựng.</p>
-      {news.length > 0 && (
-        <section>
-          <h2>Tin tức</h2>
-          <ul>
-            {news.map((n) => (
-              <li>
-                <strong>{n.data.title}</strong>
-                <time datetime={n.data.date.toISOString()}>
-                  {n.data.date.toLocaleDateString('vi-VN')}
-                </time>
-                {n.data.summary && <p>{n.data.summary}</p>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </main>
-  </body>
-</html>
+<BaseLayout>
+  <main>
+    <h1>{site.name}</h1>
+    <p>Website đang được xây dựng.</p>
+    {news.length > 0 && (
+      <section>
+        <h2>Tin tức</h2>
+        <ul>
+          {news.map((n) => (
+            <li>
+              <strong>{n.data.title}</strong>
+              <time datetime={n.data.date.toISOString()}>
+                {n.data.date.toLocaleDateString('vi-VN')}
+              </time>
+              {n.data.summary && <p>{n.data.summary}</p>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </main>
+</BaseLayout>
