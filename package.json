@@ -11,12 +11,14 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "verify": "astro check && astro build && node scripts/verify-approval.mjs && node scripts/verify-seo.mjs && node scripts/verify-libs.mjs && node scripts/verify-routes.mjs",
+    "verify": "astro check && astro build && node scripts/verify-approval.mjs && node scripts/verify-seo.mjs && node scripts/verify-libs.mjs && node scripts/verify-routes.mjs && node scripts/verify-contrast.mjs",
     "verify:approval": "node scripts/verify-approval.mjs",
     "verify:libs": "node scripts/verify-libs.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.2.1",
+    "@fontsource/baloo-2": "^5.3.0",
+    "@fontsource/be-vietnam-pro": "^5.3.0",
     "astro": "^7.3.4"
   },
   "allowScripts": {

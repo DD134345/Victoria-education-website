@@ -1,0 +1,55 @@
+/* Design tokens (WEB-06, section 6.7, decision D3). Swap values only, never names.
+   Every text/background pair is checked by scripts/verify-contrast.mjs (WCAG AA). */
+:root {
+  /* Brand: green = trust (header, nav, footer, primary actions) */
+  --brand: #536501;
+  --brand-ink: #3b4a00;
+  --brand-soft: #f3f6e4;
+  --brand-tint: #e3ebc4; /* decoration only */
+  --apple: #8e9c21; /* decoration only, never text */
+
+  /* Accent: pink = warmth (enrolment CTA, highlights) */
+  --accent: #ff5a5a; /* --ink text only; white on it fails */
+  --accent-strong: #c9303a;
+  --accent-ink: #a3212c;
+  --accent-soft: #ffedec;
+
+  /* Neutrals */
+  --surface: #fffdf9;
+  --surface-alt: var(--brand-soft);
+  --ink: #1f2614;
+  --muted: #5a6150;
+  --focus: #c9303a;
+
+  /* Type */
+  --font-heading: 'Baloo 2', system-ui, sans-serif;
+  --font-body: 'Be Vietnam Pro', system-ui, sans-serif;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem; /* 17px body */
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: clamp(1.75rem, 1.4rem + 1.6vw, 2.25rem);
+  --text-3xl: clamp(2.125rem, 1.6rem + 2.6vw, 3.25rem);
+  --leading: 1.6;
+  --leading-tight: 1.2;
+
+  /* Spacing (4-based) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Shape */
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-pill: 999px;
+  --tap: 48px; /* minimum tap target */
+  --content: 72rem;
+  --shadow: 0 6px 24px rgb(59 74 0 / 0.1);
+}

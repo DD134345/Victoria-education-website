@@ -2,6 +2,7 @@
 // Single HTML shell for every page (fixes X11: no duplicated <html> per page).
 import { isIndexable } from '../lib/site';
 import SiteNav from '../components/SiteNav.astro';
+import '../styles/global.css';
 import { canonical, pageTitle, DEFAULT_DESCRIPTION } from '../lib/seo';
 
 interface Props {

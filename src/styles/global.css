@@ -1,0 +1,62 @@
+/* Base styles (WEB-06). Self-hosted fonts via @fontsource (WOFF2, vietnamese/latin/latin-ext
+   subsets by unicode-range, font-display: swap). No Google Fonts link. */
+@import '@fontsource/be-vietnam-pro/400.css';
+@import '@fontsource/be-vietnam-pro/500.css';
+@import '@fontsource/be-vietnam-pro/600.css';
+@import '@fontsource/baloo-2/600.css';
+@import '@fontsource/baloo-2/700.css';
+@import './tokens.css';
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading);
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  line-height: var(--leading-tight);
+  font-weight: 700;
+  color: var(--brand-ink);
+  margin: 0 0 var(--space-4);
+  text-wrap: balance;
+}
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); font-weight: 600; }
+
+p { margin: 0 0 var(--space-4); max-width: 68ch; }
+
+a { color: var(--brand); text-underline-offset: 0.2em; }
+a:hover { color: var(--brand-ink); }
+
+img { max-width: 100%; height: auto; display: block; }
+
+small, .muted, time { color: var(--muted); }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.container { width: min(100% - 2 * var(--space-4), var(--content)); margin-inline: auto; }
+
+.skip-link {
+  position: absolute; left: var(--space-2); top: -4rem;
+  background: var(--brand-ink); color: #fff; padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm); z-index: 100;
+}
+.skip-link:focus { top: var(--space-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
