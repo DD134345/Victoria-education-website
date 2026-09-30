@@ -1,0 +1,171 @@
+---
+// Hero component (WEB-07b). Calm, warm, premium. Mobile-first at 360px.
+// Uses Baloo 2 headings, Be Vietnam Pro body. Green = trust, pink = warmth/CTA.
+// Soft rounded shapes, no clip-art. WCAG AA contrast.
+import { Image } from 'astro:assets';
+
+interface Props {
+  /** Main headline (max 2 lines on desktop) */
+  headline: string;
+  /** Supporting text (max 20 words, 3-4 lines) */
+  subtext?: string;
+  /** Primary CTA */
+  primaryCta?: { label: string; href: string };
+  /** Secondary CTA */
+  secondaryCta?: { label: string; href: string };
+  /** Hero image (optional) */
+  image?: ImageMetadata;
+  /** Image alt text */
+  imageAlt?: string;
+  /** Eyebrow label (max 1 per 3 sections site-wide) */
+  eyebrow?: string;
+  /** Layout variant: 'centered' | 'split' | 'asymmetric' */
+  variant?: 'centered' | 'split' | 'asymmetric';
+  /** Background variant: 'surface' | 'brand-soft' | 'accent-soft' | 'gradient' */
+  background?: 'surface' | 'brand-soft' | 'accent-soft' | 'gradient';
+}
+
+const {
+  headline,
+  subtext,
+  primaryCta,
+  secondaryCta,
+  image,
+  imageAlt = '',
+  eyebrow,
+  variant = 'centered',
+  background = 'surface',
+} = Astro.props;
+---
+
+<section class="hero hero--{variant} hero--bg-{background}" aria-labelledby="hero-heading">
+  <div class="container">
+    {eyebrow && <p class="hero__eyebrow">{eyebrow}</p>}
+    <h1 id="hero-heading" class="hero__headline">{headline}</h1>
+    {subtext && <p class="hero__subtext">{subtext}</p>}
+    {(primaryCta || secondaryCta) && (
+      <div class="hero__ctas">
+        {primaryCta && <a class="hero__cta hero__cta--primary" href={primaryCta.href}>{primaryCta.label}</a>}
+        {secondaryCta && <a class="hero__cta hero__cta--secondary" href={secondaryCta.href}>{secondaryCta.label}</a>}
+      </div>
+    )}
+    {image && (
+      <div class="hero__media" aria-hidden="true">
+        <Image src={image} alt={imageAlt} loading="eager" />
+      </div>
+    )}
+  </div>
+  {background === 'gradient' && <div class="hero__gradient" aria-hidden="true" />}
+</section>
+
+<style>
+  .hero {
+    padding: var(--space-12) 0 var(--space-16);
+    position: relative;
+    isolation: isolate;
+  }
+  .hero__eyebrow {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand);
+    background: var(--brand-tint);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    margin-bottom: var(--space-4);
+  }
+  .hero__headline {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    color: var(--brand-ink);
+    margin-bottom: var(--space-4);
+    text-wrap: balance;
+  }
+  .hero__subtext {
+    font-size: var(--text-base);
+    line-height: var(--leading);
+    color: var(--muted);
+    max-width: 68ch;
+    margin-bottom: var(--space-6);
+  }
+  .hero__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+  .hero__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+  .hero__cta:active { transform: scale(0.98); }
+  .hero__cta--primary {
+    background: var(--accent-strong);
+    color: #fff;
+  }
+  .hero__cta--primary:hover { background: var(--accent-ink); color: #fff; }
+  .hero__cta--secondary {
+    background: transparent;
+    color: var(--brand-ink);
+    border: 2px solid var(--brand-tint);
+  }
+  .hero__cta--secondary:hover { background: var(--brand-soft); border-color: var(--brand); }
+  .hero__media {
+    margin-top: var(--space-8);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .hero__media img { width: 100%; height: auto; display: block; }
+  .hero__gradient {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(135deg, var(--brand-soft) 0%, var(--accent-soft) 100%);
+    opacity: 0.6;
+  }
+  .hero--bg-brand-soft { background: var(--brand-soft); }
+  .hero--bg-accent-soft { background: var(--accent-soft); }
+  .hero--bg-gradient { background: transparent; }
+
+  /* Split variant: text left, image right on desktop */
+  .hero--split .container {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .hero--split .hero__media { margin-top: 0; }
+  @media (min-width: 768px) {
+    .hero--split .container { grid-template-columns: 1fr 1fr; align-items: center; }
+    .hero--split .hero__media { order: 2; }
+  }
+
+  /* Asymmetric variant: large headline, minimal chrome */
+  .hero--asymmetric .hero__headline { font-size: var(--text-3xl); }
+  @media (min-width: 768px) {
+    .hero--asymmetric .hero__headline { font-size: clamp(2.5rem, 2rem + 2.5vw, 3.5rem); }
+  }
+
+  /* Mobile-first: centered variant stacks naturally */
+  @media (min-width: 768px) {
+    .hero { padding: var(--space-16) 0 var(--space-24); }
+    .hero__headline { font-size: var(--text-3xl); }
+  }
+  @media (min-width: 1100px) {
+    .hero__headline { font-size: var(--text-3xl); }
+  }
+</style>

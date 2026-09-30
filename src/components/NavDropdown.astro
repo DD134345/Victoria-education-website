@@ -1,0 +1,106 @@
+---
+// NavDropdown component (WEB-07a). Accessible dropdown menu for desktop nav.
+// Uses :hover/:focus-within for zero-JS desktop, enhanced with minimal JS for touch.
+// Expects parent <li class="has-sub"> wrapper.
+interface NavItem {
+  label: string;
+  href: string;
+  current?: boolean;
+}
+
+interface Props {
+  /** Dropdown trigger label (parent link text) */
+  trigger: string;
+  /** Dropdown items */
+  items: NavItem[];
+  /** Trigger href (for parent link) */
+  triggerHref?: string;
+  /** Whether trigger is current page */
+  triggerCurrent?: boolean;
+}
+
+const { trigger, items, triggerHref = '#', triggerCurrent } = Astro.props;
+---
+
+<li class="nav-dropdown has-sub">
+  <a href={triggerHref} aria-current={triggerCurrent ? 'page' : undefined} class="nav-dropdown__trigger">
+    {trigger}
+    <svg class="nav-dropdown__arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </a>
+  <ul class="nav-dropdown__panel" role="menu">
+    {items.map(item => (
+      <li role="none">
+        <a href={item.href} role="menuitem" aria-current={item.current ? 'page' : undefined} class="nav-dropdown__item">
+          {item.label}
+        </a>
+      </li>
+    ))}
+  </ul>
+</li>
+
+<style>
+  .nav-dropdown { position: relative; }
+  .nav-dropdown__trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--tap);
+    padding: 0 var(--space-3);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--text-sm);
+  }
+  .nav-dropdown__arrow {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    color: var(--brand-tint);
+  }
+  .has-sub:hover > .nav-dropdown__trigger .nav-dropdown__arrow,
+  .has-sub:focus-within > .nav-dropdown__trigger .nav-dropdown__arrow {
+    transform: rotate(180deg);
+  }
+
+  .nav-dropdown__panel {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 16rem;
+    padding: var(--space-2) 0;
+    margin: 0;
+    list-style: none;
+    background: var(--brand-ink);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    box-shadow: var(--shadow);
+    z-index: 50;
+  }
+  .has-sub:hover > .nav-dropdown__panel,
+  .has-sub:focus-within > .nav-dropdown__panel {
+    display: block;
+  }
+
+  .nav-dropdown__item a {
+    display: block;
+    padding: var(--space-2) var(--space-4);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 400;
+    font-size: var(--text-sm);
+    white-space: nowrap;
+    transition: background-color 0.15s ease;
+  }
+  .nav-dropdown__item a:hover,
+  .nav-dropdown__item a[aria-current='page'] {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-dropdown__arrow, .nav-dropdown__item a { transition: none; }
+  }
+</style>

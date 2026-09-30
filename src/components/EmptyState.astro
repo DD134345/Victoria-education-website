@@ -1,0 +1,68 @@
+---
+// EmptyState component (WEB-07b). INTERNAL ONLY - never rendered publicly.
+// Used in development/preview to show why a section is hidden.
+// Hidden in production builds via CSS.
+interface Props {
+  /** Reason the section is hidden */
+  reason: 'no-data' | 'no-approval' | 'no-content' | 'coming-soon' | 'config-missing';
+  /** Custom message */
+  message?: string;
+  /** Section name for context */
+  section?: string;
+}
+
+const { reason, message, section } = Astro.props;
+
+const messages: Record<string, string> = {
+  'no-data': 'Chưa có dữ liệu cho mục này',
+  'no-approval': 'Chưa có mục nào được duyệt',
+  'no-content': 'Chưa có nội dung',
+  'coming-soon': 'Sắp có mặt',
+  'config-missing': 'Thiếu cấu hình (TODO-OWNER)',
+};
+---
+
+<div class="empty-state empty-state--{reason}" data-section={section} hidden>
+  <div class="empty-state__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+  </div>
+  <p class="empty-state__message">{message || messages[reason]}</p>
+  {section && <p class="empty-state__section">Mục: {section}</p>}
+</div>
+
+<style>
+  /* Only visible in development/preview, hidden in production */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-8) var(--space-4);
+    background: var(--brand-soft);
+    border: 2px dashed var(--brand-tint);
+    border-radius: var(--radius-lg);
+    color: var(--muted);
+    font-size: var(--text-base);
+    text-align: center;
+  }
+  .empty-state__icon {
+    width: 48px;
+    height: 48px;
+    color: var(--brand-tint);
+  }
+  .empty-state__message { margin: 0; font-weight: 500; }
+  .empty-state__section {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-family: var(--font-body);
+    opacity: 0.7;
+  }
+
+  /* Hide in production builds */
+  :global(html:not([data-dev])) .empty-state { display: none !important; }
+</style>

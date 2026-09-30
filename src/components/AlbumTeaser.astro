@@ -1,0 +1,197 @@
+---
+// AlbumTeaser component (WEB-07b). For homepage "Thư viện ảnh" section (§6.6 #11).
+// Shows 3 latest albums. Hidden until ≥ 1 album.
+// Links to album detail pages. Lazy images, keyboard lightbox (handled by Gallery component).
+import { Image } from 'astro:assets';
+import { getPublished } from '../lib/published';
+import EmptyState from './EmptyState.astro';
+
+interface Props {
+  /** Maximum albums to show */
+  limit?: number;
+  /** Category filter */
+  category?: 'co-so-vat-chat' | 'hinh-anh-cac-be';
+  /** Section heading */
+  heading?: string;
+  /** Link to all albums page */
+  viewAllHref?: string;
+  /** View all label */
+  viewAllLabel?: string;
+}
+
+const { limit = 3, category, heading, viewAllHref = '/thu-vien/', viewAllLabel = 'Xem tất cả' } = Astro.props;
+
+const albums = (await getPublished('albums'))
+  .filter(a => !category || a.data.category === category)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, limit);
+
+const categoryLabels = {
+  'co-so-vat-chat': 'Cơ sở vật chất',
+  'hinh-anh-cac-be': 'Hình ảnh các bé',
+};
+---
+
+<section class="album-teaser" aria-labelledby={heading ? 'album-teaser-heading' : undefined}>
+  <div class="container">
+    {(heading || viewAllHref) && (
+      <header class="album-teaser__header">
+        {heading && <h2 id="album-teaser-heading" class="album-teaser__heading">{heading}</h2>}
+        {viewAllHref && albums.length > 0 && (
+          <a class="album-teaser__view-all" href={viewAllHref}>
+            {viewAllLabel}
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        )}
+      </header>
+    )}
+
+    {albums.length > 0 ? (
+      <ul class="album-teaser__grid">
+        {albums.map(album => {
+          // Astro collection entries have `slug` property (from filename)
+          const slug = (album as { slug?: string }).slug ?? album.id.replace(/\.md$/, '');
+          return (
+            <li class="album-teaser__item">
+              <article class="album-card">
+                <a class="album-card__link" href={`/thu-vien/${slug}/`} aria-label={`Xem album: ${album.data.title}`}>
+                  <div class="album-card__cover">
+                    {album.data.photos[0] && (
+                      <Image src={album.data.photos[0].src} alt={album.data.photos[0].alt} loading="lazy" />
+                    )}
+                    <span class="album-card__count">{album.data.photos.length} ảnh</span>
+                    <span class={`album-card__category album-card__category--${album.data.category}`}>
+                      {categoryLabels[album.data.category]}
+                    </span>
+                  </div>
+                  <div class="album-card__info">
+                    <h3 class="album-card__title">{album.data.title}</h3>
+                    <time class="album-card__date" datetime={album.data.date.toISOString()}>
+                      {album.data.date.toLocaleDateString('vi-VN')}
+                    </time>
+                  </div>
+                </a>
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <EmptyState reason="no-data" section="Thư viện ảnh" message="Chưa có album ảnh nào." />
+    )}
+  </div>
+</section>
+
+<style>
+  .album-teaser__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+  .album-teaser__heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin: 0;
+  }
+  .album-teaser__view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    color: var(--brand);
+    text-decoration: none;
+    transition: color 0.2s ease, gap 0.2s ease;
+  }
+  .album-teaser__view-all:hover { color: var(--brand-ink); gap: var(--space-3); }
+  .album-teaser__view-all svg { width: 18px; height: 18px; }
+
+  .album-teaser__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  @media (min-width: 600px) { .album-teaser__grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 900px) { .album-teaser__grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .album-card {
+    background: var(--surface);
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .album-card:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--brand);
+    transform: translateY(-2px);
+  }
+
+  .album-card__link { display: block; text-decoration: none; }
+  .album-card__cover {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+  }
+  .album-card__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .album-card:hover .album-card__cover img { transform: scale(1.03); }
+
+  .album-card__count {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    background: rgba(31, 38, 20, 0.8);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(4px);
+  }
+  .album-card__category {
+    position: absolute;
+    bottom: var(--space-2);
+    left: var(--space-2);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-pill);
+    color: #fff;
+  }
+  .album-card__category--co-so-vat-chat { background: var(--brand); }
+  .album-card__category--hinh-anh-cac-be { background: var(--accent-strong); }
+
+  .album-card__info { padding: var(--space-4); }
+  .album-card__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin: 0 0 var(--space-1);
+  }
+  .album-card__date {
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .album-card, .album-card__cover img, .album-teaser__view-all { transition: none; }
+  }
+</style>

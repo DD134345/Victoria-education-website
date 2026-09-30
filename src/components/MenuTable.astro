@@ -1,0 +1,160 @@
+---
+// MenuTable component (WEB-07b). For "Thực đơn tuần" page (§6.3).
+// Renders weekly menu as HTML <table> with print CSS.
+// Columns: Ngày, Bữa sáng, Bữa trưa, Bữa chiều, Phụ bữa.
+import { formatVnDate, parseVnDate } from '../lib/dates';
+
+interface Props {
+  /** Week start date (Monday) */
+  weekStart: Date;
+  /** Menu days */
+  days: Array<{
+    date: string; // DD/MM/YYYY
+    breakfast: string;
+    lunch: string;
+    afternoon: string;
+    snack?: string;
+  }>;
+}
+
+const { weekStart, days } = Astro.props;
+const weekEnd = new Date(weekStart);
+weekEnd.setDate(weekEnd.getDate() + 6);
+---
+
+<section class="menu-table" aria-labelledby="menu-table-heading">
+  <header class="menu-table__header">
+    <h2 id="menu-table-heading" class="menu-table__heading">
+      Thực đơn tuần {formatVnDate(weekStart)} – {formatVnDate(weekEnd)}
+    </h2>
+    <button class="menu-table__print" onclick="window.print()" aria-label="In thực đơn">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+        <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5M18 18h2a2 2 0 0 0 2-2v-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+      </svg>
+      In thực đơn
+    </button>
+  </header>
+
+  <div class="menu-table__wrapper">
+    <table class="menu-table__table">
+      <caption class="sr-only">Thực đơn tuần {formatVnDate(weekStart)} – {formatVnDate(weekEnd)}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Ngày</th>
+          <th scope="col">Bữa sáng</th>
+          <th scope="col">Bữa trưa</th>
+          <th scope="col">Bữa chiều</th>
+          <th scope="col">Phụ bữa</th>
+        </tr>
+      </thead>
+      <tbody>
+        {days.map(day => {
+          const parsedDate = parseVnDate(day.date);
+          return (
+            <tr>
+              <th scope="row">{formatVnDate(parsedDate ?? weekStart)}</th>
+              <td>{day.breakfast}</td>
+              <td>{day.lunch}</td>
+              <td>{day.afternoon}</td>
+              <td>{day.snack || '—'}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="menu-table__note">Thực đơn có thể thay đổi tùy theo mùa vụ và sẵn có nguyên liệu.</p>
+</section>
+
+<style>
+  .menu-table__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+  .menu-table__heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin: 0;
+  }
+  .menu-table__print {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: var(--space-2) var(--space-4);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    cursor: pointer;
+    min-height: var(--tap);
+    transition: background-color 0.2s ease;
+  }
+  .menu-table__print:hover { background: var(--brand-ink); }
+  .menu-table__print:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .menu-table__wrapper { overflow-x: auto; margin-bottom: var(--space-4); }
+  .menu-table__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    min-width: 600px;
+  }
+  .menu-table__table caption { display: none; }
+  .menu-table__table th,
+  .menu-table__table td {
+    padding: var(--space-3);
+    border: 1px solid var(--brand-tint);
+    text-align: left;
+    vertical-align: top;
+  }
+  .menu-table__table th {
+    background: var(--brand-soft);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--brand-ink);
+    white-space: nowrap;
+  }
+  .menu-table__table th[scope="row"] {
+    background: var(--surface);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .menu-table__table tbody tr:nth-child(even) td { background: var(--brand-soft); }
+  .menu-table__table td { color: var(--ink); line-height: var(--leading); }
+
+  .menu-table__note {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* Print styles */
+  @media print {
+    .menu-table__header { display: none; }
+    .menu-table__note { display: none; }
+    .menu-table__wrapper { overflow: visible; }
+    .menu-table__table { font-size: 10pt; min-width: auto; }
+    .menu-table__table th,
+    .menu-table__table td { padding: 4px 6px; }
+    .sr-only { position: static; clip: auto; width: auto; height: auto; margin: 0; overflow: visible; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .menu-table__print { transition: none; }
+  }
+</style>

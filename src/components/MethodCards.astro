@@ -1,0 +1,203 @@
+---
+// MethodCards component (WEB-07b). For "Phương pháp giáo dục" page (§6.3, §6.6 #7).
+// Each method: icon/illustration, title, short description, link to detail.
+// One H2 per method feeds homepage teaser. Soft rounded, green/pink accents.
+import { Image } from 'astro:assets';
+
+interface Method {
+  /** Method title */
+  title: string;
+  /** Short description for card */
+  description: string;
+  /** Link to detail page */
+  href: string;
+  /** Icon name or custom SVG */
+  icon?: string;
+  /** Custom illustration */
+  illustration?: ImageMetadata;
+  /** Illustration alt */
+  illustrationAlt?: string;
+  /** Accent variant */
+  accent?: 'brand' | 'accent' | 'apple';
+}
+
+interface Props {
+  /** Array of methods */
+  methods: Method[];
+  /** Section heading */
+  heading?: string;
+  /** Section subheading */
+  subheading?: string;
+  /** Eyebrow label */
+  eyebrow?: string;
+}
+
+const { methods, heading, subheading, eyebrow } = Astro.props;
+
+const accentMap = {
+  brand: { color: 'var(--brand)', soft: 'var(--brand-soft)', tint: 'var(--brand-tint)' },
+  accent: { color: 'var(--accent-strong)', soft: 'var(--accent-soft)', tint: 'var(--accent)' },
+  apple: { color: 'var(--brand)', soft: 'var(--brand-soft)', tint: 'var(--brand-tint)' },
+};
+
+const defaultIcons: Record<string, string> = {
+  'montessori': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>`,
+  'reggio': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+  'steam': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 18 2 12 8 6"></polyline></svg>`,
+  'play': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>`,
+  'nature': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path></svg>`,
+  'bilingual': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`,
+};
+---
+
+<section class="method-cards" aria-labelledby={heading ? 'methods-heading' : undefined}>
+  <div class="container">
+    {(heading || eyebrow) && (
+      <header class="method-cards__header">
+        {eyebrow && <p class="method-cards__eyebrow">{eyebrow}</p>}
+        {heading && <h2 id="methods-heading" class="method-cards__heading">{heading}</h2>}
+        {subheading && <p class="method-cards__subheading">{subheading}</p>}
+      </header>
+    )}
+    <ul class="method-cards__list">
+      {methods.map((method, index) => {
+        const accent = accentMap[method.accent || 'brand'];
+        return (
+          <li class="method-cards__item" style="--accent-color: {accent.color}; --accent-soft: {accent.soft}; --accent-tint: {accent.tint};">
+            <article class="method-card">
+              <div class="method-card__icon" aria-hidden="true">
+                {method.illustration ? (
+                  <Image src={method.illustration} alt={method.illustrationAlt || ''} loading="lazy" />
+                ) : method.icon ? (
+                  <div class="method-card__icon-svg" set:html={defaultIcons[method.icon] || method.icon} />
+                ) : (
+                  <span class="method-card__number">{index + 1}</span>
+                )}
+              </div>
+              <div class="method-card__content">
+                <h3 class="method-card__title">{method.title}</h3>
+                <p class="method-card__description">{method.description}</p>
+                <a class="method-card__link" href={method.href}>
+                  Xem chi tiết
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"></path>
+                  </svg>
+                </a>
+              </div>
+            </article>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .method-cards__header { margin-bottom: var(--space-10); text-align: center; }
+  .method-cards__eyebrow {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand);
+    background: var(--brand-tint);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    margin-bottom: var(--space-3);
+  }
+  .method-cards__heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: var(--space-2);
+  }
+  .method-cards__subheading {
+    font-size: var(--text-base);
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 auto;
+  }
+
+  .method-cards__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+  @media (min-width: 768px) { .method-cards__list { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1100px) { .method-cards__list { grid-template-columns: repeat(3, 1fr); } }
+
+  .method-card {
+    background: var(--surface);
+    border: 1px solid var(--accent-tint);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .method-card:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+  }
+
+  .method-card__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-4);
+    flex-shrink: 0;
+  }
+  .method-card__icon-svg { width: 32px; height: 32px; color: var(--accent-color); }
+  .method-card__icon img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-md); }
+  .method-card__number {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--accent-color);
+  }
+
+  .method-card__content { flex: 1; display: flex; flex-direction: column; }
+  .method-card__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin: 0 0 var(--space-2);
+  }
+  .method-card__description {
+    font-size: var(--text-base);
+    color: var(--muted);
+    line-height: var(--leading);
+    flex: 1;
+    margin-bottom: var(--space-4);
+  }
+  .method-card__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.2s ease, gap 0.2s ease;
+  }
+  .method-card__link:hover { color: var(--brand-ink); gap: var(--space-3); }
+  .method-card__link svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .method-card, .method-card__link { transition: none; }
+  }
+</style>

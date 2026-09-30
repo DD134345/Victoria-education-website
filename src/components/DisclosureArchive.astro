@@ -1,0 +1,128 @@
+---
+// DisclosureArchive component (WEB-07b). For "Lưu trữ" page (§6.8).
+// Shows all superseded disclosure items, grouped by group, dated, never deleted.
+// Uses DisclosureItem internally. Mobile-first, grouped by compliance group.
+import DisclosureItem from './DisclosureItem.astro';
+import { getPublished } from '../lib/published';
+
+interface Props {
+  /** Filter by group (optional) */
+  group?: 'thong-tin-chung' | 'tai-chinh' | 'dieu-kien-dam-bao-chat-luong' | 'ke-hoach-ket-qua' | 'bao-cao-thuong-nien';
+  /** School year filter (optional) */
+  schoolYear?: string;
+}
+
+const { group, schoolYear } = Astro.props;
+
+// Get all disclosure entries (approved only via published.ts)
+const allEntries = await getPublished('disclosure');
+
+// Filter to superseded items only (archive)
+let archiveEntries = allEntries.filter(e => e.data.superseded_by);
+
+// Apply optional filters
+if (group) {
+  archiveEntries = archiveEntries.filter(e => e.data.group === group);
+}
+if (schoolYear) {
+  archiveEntries = archiveEntries.filter(e => e.data.school_year === schoolYear);
+}
+
+// Sort: newest updated_at first
+archiveEntries.sort((a, b) => b.data.updated_at.localeCompare(a.data.updated_at));
+
+// Group by compliance group
+const groups = {
+  'thong-tin-chung': [] as typeof archiveEntries,
+  'tai-chinh': [] as typeof archiveEntries,
+  'dieu-kien-dam-bao-chat-luong': [] as typeof archiveEntries,
+  'ke-hoach-ket-qua': [] as typeof archiveEntries,
+  'bao-cao-thuong-nien': [] as typeof archiveEntries,
+};
+for (const entry of archiveEntries) {
+  groups[entry.data.group].push(entry);
+}
+
+const groupLabels: Record<string, string> = {
+  'thong-tin-chung': 'Thông tin chung',
+  'tai-chinh': 'Tài chính',
+  'dieu-kien-dam-bao-chat-luong': 'Điều kiện đảm bảo chất lượng',
+  'ke-hoach-ket-qua': 'Kế hoạch và kết quả',
+  'bao-cao-thuong-nien': 'Báo cáo thường niên',
+};
+---
+
+<section class="disclosure-archive" aria-labelledby="archive-heading">
+  <div class="container">
+    <header class="disclosure-archive__header">
+      <h2 id="archive-heading" class="disclosure-archive__title">Lưu trữ công khai</h2>
+      <p class="disclosure-archive__description">
+        Các thông tin công khai đã được thay thế hoặc hết hiệu lực, được lưu giữ tối thiểu 5 năm theo quy định.
+      </p>
+    </header>
+
+    {Object.entries(groups).map(([groupKey, entries]) => {
+      if (entries.length === 0) return null;
+      return (
+        <section class="disclosure-archive__group">
+          <h3 class="disclosure-archive__group-title">{groupLabels[groupKey]}</h3>
+          <ul class="disclosure-archive__list">
+            {entries.map(entry => (
+              <li>
+                <DisclosureItem entry={entry} variant="compact" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
+    })}
+    {archiveEntries.length === 0 && (
+      <p class="disclosure-archive__empty">Chưa có mục nào trong lưu trữ.</p>
+    )}
+  </div>
+</section>
+
+<style>
+  .disclosure-archive__header { margin-bottom: var(--space-10); text-align: center; }
+  .disclosure-archive__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: var(--space-3);
+  }
+  .disclosure-archive__description {
+    font-size: var(--text-base);
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 auto;
+  }
+
+  .disclosure-archive__group { margin-bottom: var(--space-12); }
+  .disclosure-archive__group:last-child { margin-bottom: 0; }
+  .disclosure-archive__group-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-3);
+    border-bottom: 2px solid var(--brand-tint);
+  }
+
+  .disclosure-archive__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .disclosure-archive__empty {
+    text-align: center;
+    padding: var(--space-12) var(--space-4);
+    color: var(--muted);
+    font-size: var(--text-base);
+  }
+</style>

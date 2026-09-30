@@ -1,0 +1,190 @@
+---
+// ConsentNotice component (WEB-07b). For "Đăng ký tuyển sinh" page (§6.3, §6.9).
+// Shows consent text before Google Form embed. No <form> element anywhere except the iframe.
+// Pink accent for warmth/CTA. Must be acknowledged before form shows (handled by page script).
+import Prose from './Prose.astro';
+
+interface Props {
+  /** Consent title */
+  title?: string;
+  /** Consent body text (Markdown supported via Prose) */
+  body: string;
+  /** Checkbox label */
+  checkboxLabel?: string;
+  /** Button label to proceed */
+  buttonLabel?: string;
+  /** ID for the consent checkbox (for JS hookup) */
+  checkboxId?: string;
+  /** ID for the proceed button */
+  buttonId?: string;
+  /** Container ID for the form embed (shown after consent) */
+  formContainerId?: string;
+}
+
+const {
+  title = 'Cam kết bảo mật thông tin cá nhân',
+  body,
+  checkboxLabel = 'Tôi đã đọc và đồng ý với Cam kết bảo mật thông tin cá nhân',
+  buttonLabel = 'Tiếp tục đăng ký',
+  checkboxId = 'consent-checkbox',
+  buttonId = 'consent-proceed',
+  formContainerId = 'form-embed-container',
+} = Astro.props;
+---
+
+<section class="consent-notice" aria-labelledby="consent-title">
+  <header class="consent-notice__header">
+    <h2 id="consent-title" class="consent-notice__title">{title}</h2>
+  </header>
+  <div class="consent-notice__body">
+    <Prose>{body}</Prose>
+  </div>
+  <div class="consent-notice__actions">
+    <label class="consent-notice__checkbox" for={checkboxId}>
+      <input type="checkbox" id={checkboxId} required />
+      <span class="consent-notice__checkbox-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </span>
+      <span class="consent-notice__checkbox-text">{checkboxLabel}</span>
+    </label>
+    <button
+      type="button"
+      id={buttonId}
+      class="consent-notice__button"
+      disabled
+      aria-controls={formContainerId}
+      aria-expanded="false"
+    >
+      {buttonLabel}
+    </button>
+  </div>
+  <div id={formContainerId} class="consent-notice__form-container" hidden aria-live="polite">
+    <slot name="form-embed" />
+  </div>
+</section>
+
+<script is:inline>
+  // Vanilla JS island: enable button when checkbox checked, show form embed
+  // IDs are read from the rendered elements
+  const checkbox = document.querySelector('.consent-notice__checkbox input[type="checkbox"]');
+  const button = document.querySelector('.consent-notice__button');
+  const formContainer = document.querySelector('.consent-notice__form-container');
+
+  if (checkbox && button && formContainer) {
+    checkbox.addEventListener('change', () => {
+      button.disabled = !checkbox.checked;
+      button.setAttribute('aria-expanded', checkbox.checked.toString());
+    });
+    button.addEventListener('click', () => {
+      if (checkbox.checked) {
+        formContainer.hidden = false;
+        button.hidden = true;
+        checkbox.closest('.consent-notice__checkbox')?.classList.add('consent-notice__checkbox--done');
+      }
+    });
+  }
+</script>
+
+<style>
+  .consent-notice {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    max-width: 720px;
+    margin: 0 auto var(--space-8);
+  }
+  .consent-notice__header { margin-bottom: var(--space-4); }
+  .consent-notice__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--accent-ink);
+    margin: 0;
+  }
+  .consent-notice__body { margin-bottom: var(--space-5); }
+  .consent-notice__actions { display: flex; flex-direction: column; gap: var(--space-4); }
+  @media (min-width: 480px) {
+    .consent-notice__actions { flex-direction: row; align-items: flex-start; }
+  }
+
+  .consent-notice__checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    cursor: pointer;
+    flex: 1;
+    font-size: var(--text-base);
+    color: var(--ink);
+    line-height: var(--leading);
+  }
+  .consent-notice__checkbox input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .consent-notice__checkbox-mark {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--accent-strong);
+    border-radius: var(--radius-sm);
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .consent-notice__checkbox-mark svg {
+    width: 16px;
+    height: 16px;
+    color: var(--accent-strong);
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .consent-notice__checkbox input:checked + .consent-notice__checkbox-mark {
+    background: var(--accent-strong);
+    border-color: var(--accent-strong);
+  }
+  .consent-notice__checkbox input:checked + .consent-notice__checkbox-mark svg {
+    opacity: 1;
+    transform: scale(1);
+    color: #fff;
+  }
+  .consent-notice__checkbox input:focus-visible + .consent-notice__checkbox-mark {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .consent-notice__checkbox-text { line-height: 1.5; }
+
+  .consent-notice__button {
+    background: var(--accent-strong);
+    color: #fff;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    padding: var(--space-3) var(--space-6);
+    border: none;
+    border-radius: var(--radius-pill);
+    min-height: var(--tap);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+  }
+  .consent-notice__button:hover:not(:disabled) { background: var(--accent-ink); }
+  .consent-notice__button:active:not(:disabled) { transform: scale(0.98); }
+  .consent-notice__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .consent-notice__form-container { margin-top: var(--space-6); padding-top: var(--space-6); border-top: 1px solid var(--accent); }
+  .consent-notice__form-container:not([hidden]) { display: block; }
+
+  .consent-notice__checkbox--done { opacity: 0.6; pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .consent-notice__checkbox-mark, .consent-notice__checkbox-mark svg, .consent-notice__button { transition: none; }
+  }
+</style>

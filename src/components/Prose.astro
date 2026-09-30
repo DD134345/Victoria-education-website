@@ -1,0 +1,158 @@
+---
+// Prose component (WEB-07b). Rich text rendering for page content, news, notices.
+// Applies consistent typography: Baloo 2 headings, Be Vietnam Pro body.
+// Handles: h2-h4, p, ul/ol, blockquote, table, img, a, strong, em.
+import { Image } from 'astro:assets';
+
+interface Props {
+  /** HTML string or Markdown-rendered content */
+  children: unknown;
+  /** Wrapper class */
+  class?: string;
+  /** Base heading level (h2 by default, since h1 is page title) */
+  baseLevel?: 2 | 3;
+}
+
+const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
+---
+
+<div class="prose {wrapperClass}" data-base-level={baseLevel}>
+  {children}
+</div>
+
+<style>
+  .prose {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: var(--leading);
+    color: var(--ink);
+    max-width: 68ch;
+  }
+
+  /* Headings */
+  .prose h2, .prose h3, .prose h4 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    color: var(--brand-ink);
+    margin: var(--space-8) 0 var(--space-4);
+    text-wrap: balance;
+  }
+  .prose h2 { font-size: var(--text-2xl); }
+  .prose h3 { font-size: var(--text-xl); font-weight: 600; }
+  .prose h4 { font-size: var(--text-lg); font-weight: 600; }
+
+  /* Adjust if baseLevel is 3 */
+  .prose[data-base-level="3"] h2 { font-size: var(--text-xl); }
+  .prose[data-base-level="3"] h3 { font-size: var(--text-lg); }
+
+  /* Paragraphs */
+  .prose p { margin: 0 0 var(--space-4); }
+  .prose p:last-child { margin-bottom: 0; }
+
+  /* Links */
+  .prose a {
+    color: var(--brand);
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 2px;
+    transition: color 0.2s ease;
+  }
+  .prose a:hover { color: var(--brand-ink); }
+
+  /* Text emphasis */
+  .prose strong { font-weight: 700; color: var(--ink); }
+  .prose em { font-style: italic; }
+  .prose code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+    background: var(--brand-tint);
+    padding: 0.125em 0.375em;
+    border-radius: var(--radius-sm);
+  }
+  .prose pre {
+    background: var(--brand-ink);
+    color: var(--brand-tint);
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin: var(--space-4) 0;
+  }
+  .prose pre code { background: none; padding: 0; font-size: var(--text-sm); line-height: 1.5; }
+
+  /* Lists */
+  .prose ul, .prose ol { margin: var(--space-4) 0; padding-left: var(--space-6); }
+  .prose li { margin: var(--space-2) 0; }
+  .prose ul { list-style: disc; }
+  .prose ol { list-style: decimal; }
+  .prose ul ul, .prose ol ol, .prose ul ol, .prose ol ul { margin: var(--space-2) 0; }
+
+  /* Blockquotes */
+  .prose blockquote {
+    margin: var(--space-6) 0;
+    padding: var(--space-4) var(--space-6);
+    border-left: 4px solid var(--accent-strong);
+    background: var(--accent-soft);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    font-style: italic;
+    color: var(--accent-ink);
+  }
+  .prose blockquote p:last-child { margin-bottom: 0; }
+  .prose blockquote cite {
+    display: block;
+    margin-top: var(--space-3);
+    font-style: normal;
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  /* Tables */
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--space-6) 0;
+    font-size: var(--text-sm);
+  }
+  .prose th, .prose td {
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--brand-tint);
+    text-align: left;
+  }
+  .prose th {
+    background: var(--brand-soft);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--brand-ink);
+  }
+  .prose tr:nth-child(even) td { background: var(--surface-alt); }
+  .prose caption {
+    caption-side: bottom;
+    padding: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  /* Images */
+  .prose img { max-width: 100%; height: auto; border-radius: var(--radius-md); margin: var(--space-4) 0; }
+  .prose figure { margin: var(--space-6) 0; }
+  .prose figcaption {
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--muted);
+    margin-top: var(--space-2);
+  }
+
+  /* Horizontal rule */
+  .prose hr {
+    border: none;
+    border-top: 2px solid var(--brand-tint);
+    margin: var(--space-8) 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .prose { font-size: var(--text-sm); }
+    .prose h2 { font-size: var(--text-xl); }
+    .prose h3 { font-size: var(--text-lg); }
+    .prose h4 { font-size: var(--text-base); }
+  }
+</style>

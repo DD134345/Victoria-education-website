@@ -1,0 +1,220 @@
+---
+// Timeline component (WEB-07b). For educational plans, history, milestones.
+// Vertical line with dots, alternating or same-side cards.
+// Mobile-first: stacked. Desktop: alternating left/right for visual rhythm.
+import { Image } from 'astro:assets';
+
+interface TimelineItem {
+  /** Date label (DD/MM/YYYY or "Tháng 10/2025") */
+  date: string;
+  /** Title of the milestone */
+  title: string;
+  /** Description */
+  description?: string;
+  /** Optional image */
+  image?: ImageMetadata;
+  /** Image alt */
+  imageAlt?: string;
+  /** Icon variant */
+  icon?: 'default' | 'check' | 'star' | 'apple';
+  /** Side on desktop: 'left' | 'right' | 'auto' (alternates) */
+  side?: 'left' | 'right' | 'auto';
+}
+
+interface Props {
+  /** Timeline items */
+  items: TimelineItem[];
+  /** Section heading */
+  heading?: string;
+  /** Section subheading */
+  subheading?: string;
+  /** Layout: 'alternating' | 'same-side' */
+  layout?: 'alternating' | 'same-side';
+  /** Eyebrow label */
+  eyebrow?: string;
+}
+
+const { items, heading, subheading, layout = 'alternating', eyebrow } = Astro.props;
+---
+
+<section class="timeline" aria-labelledby={heading ? 'timeline-heading' : undefined}>
+  <div class="container">
+    {(heading || eyebrow) && (
+      <header class="timeline__header">
+        {eyebrow && <p class="timeline__eyebrow">{eyebrow}</p>}
+        {heading && <h2 id="timeline-heading" class="timeline__heading">{heading}</h2>}
+        {subheading && <p class="timeline__subheading">{subheading}</p>}
+      </header>
+    )}
+    <ol class="timeline__list">
+      {items.map((item, index) => {
+        const side = item.side === 'auto' || !item.side
+          ? (layout === 'alternating' ? (index % 2 === 0 ? 'left' : 'right') : 'right')
+          : item.side;
+        return (
+          <li class={`timeline__item timeline__item--${side}`}>
+            <div class="timeline__marker" aria-hidden="true">
+              <span class={`timeline__dot timeline__dot--${item.icon || 'default'}`}></span>
+            </div>
+            <time class="timeline__date" datetime={item.date}>{item.date}</time>
+            <article class="timeline__card">
+              <h3 class="timeline__title">{item.title}</h3>
+              {item.description && <p class="timeline__description">{item.description}</p>}
+              {item.image && (
+                <div class="timeline__media">
+                  <Image src={item.image} alt={item.imageAlt || ''} loading="lazy" />
+                </div>
+              )}
+            </article>
+          </li>
+        );
+      })}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .timeline__header { margin-bottom: var(--space-10); text-align: center; }
+  .timeline__eyebrow {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand);
+    background: var(--brand-tint);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    margin-bottom: var(--space-3);
+  }
+  .timeline__heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: var(--space-2);
+  }
+  .timeline__subheading {
+    font-size: var(--text-base);
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 auto;
+  }
+
+  .timeline__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
+  .timeline__list::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 1.5rem;
+    width: 2px;
+    background: var(--brand-tint);
+  }
+  @media (min-width: 768px) {
+    .timeline__list::before { left: 50%; transform: translateX(-50%); }
+  }
+
+  .timeline__item {
+    position: relative;
+    padding-left: calc(1.5rem + var(--space-4) + 12px);
+    margin-bottom: var(--space-10);
+  }
+  .timeline__item:last-child { margin-bottom: 0; }
+  @media (min-width: 768px) {
+    .timeline__item { padding-left: 0; width: 50%; }
+    .timeline__item--left { padding-right: calc(50% + var(--space-6)); text-align: right; }
+    .timeline__item--right { margin-left: 50%; padding-left: calc(50% + var(--space-6)); }
+  }
+
+  .timeline__marker {
+    position: absolute;
+    left: 1.5rem;
+    top: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 1;
+  }
+  @media (min-width: 768px) {
+    .timeline__marker { left: 50%; transform: translateX(-50%); }
+    .timeline__item--left .timeline__marker { left: 50%; transform: translateX(-50%); }
+    .timeline__item--right .timeline__marker { left: 50%; transform: translateX(-50%); }
+  }
+
+  .timeline__dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid var(--surface);
+    box-shadow: 0 0 0 2px var(--brand-tint);
+    background: var(--brand);
+    position: relative;
+  }
+  .timeline__dot--check::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+  .timeline__dot--star {
+    background: var(--accent-strong);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+  .timeline__dot--apple {
+    background: var(--apple);
+    box-shadow: 0 0 0 2px var(--brand-tint);
+  }
+
+  .timeline__date {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--brand);
+    margin-bottom: var(--space-2);
+    white-space: nowrap;
+  }
+  @media (min-width: 768px) {
+    .timeline__item--left .timeline__date { margin-right: var(--space-4); }
+    .timeline__item--right .timeline__date { margin-left: var(--space-4); }
+  }
+
+  .timeline__card {
+    background: var(--surface);
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow);
+  }
+  .timeline__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: var(--space-2);
+  }
+  .timeline__description {
+    font-size: var(--text-base);
+    color: var(--muted);
+    line-height: var(--leading);
+    margin-bottom: var(--space-3);
+  }
+  .timeline__media {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .timeline__media img { width: 100%; height: auto; display: block; }
+</style>

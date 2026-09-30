@@ -1,0 +1,194 @@
+---
+// NewsCard component (WEB-07b). For "Tin tức – Sự kiện" collection.
+// Shows: category badge, title, date, summary, cover image, "Xem tiếp" link.
+// Only renders approved entries (handled by published.ts filter).
+import { Image } from 'astro:assets';
+import { formatVnDate as formatDate } from '../lib/dates';
+
+interface Props {
+  /** News entry from getPublished('news') */
+  entry: {
+    data: {
+      title: string;
+      date: Date;
+      summary?: string;
+      category: 'su-kien' | 'hoc-tap' | 'dinh-duong' | 'tuyen-sinh';
+      cover?: ImageMetadata;
+      cover_alt?: string;
+      slug: string;
+    };
+  };
+  /** Variant: 'default' | 'compact' | 'featured' */
+  variant?: 'default' | 'compact' | 'featured';
+}
+
+const { entry, variant = 'default' } = Astro.props;
+const { data } = entry;
+const categoryLabels: Record<string, string> = {
+  'su-kien': 'Sự kiện',
+  'hoc-tap': 'Học tập',
+  'dinh-duong': 'Dinh dưỡng',
+  'tuyen-sinh': 'Tuyển sinh',
+};
+const categoryVariants: Record<string, 'brand' | 'accent' | 'apple'> = {
+  'su-kien': 'brand',
+  'hoc-tap': 'apple',
+  'dinh-duong': 'accent',
+  'tuyen-sinh': 'brand',
+};
+---
+
+<article class="news-card news-card--{variant}">
+  {data.cover && (
+    <a class="news-card__cover" href={`/tin-tuc/${data.slug}/`} aria-label={`Xem chi tiết: ${data.title}`}>
+      <Image src={data.cover} alt={data.cover_alt || ''} loading={variant === 'featured' ? 'eager' : 'lazy'} />
+      <span class={`news-card__category news-card__category--${categoryVariants[data.category]}`}>
+        {categoryLabels[data.category]}
+      </span>
+    </a>
+  )}
+  <div class="news-card__content">
+    {!data.cover && (
+      <span class={`news-card__category news-card__category--inline news-card__category--${categoryVariants[data.category]}`}>
+        {categoryLabels[data.category]}
+      </span>
+    )}
+    <time class="news-card__date" datetime={data.date.toISOString()}>
+      {formatDate(data.date)}
+    </time>
+    <h3 class="news-card__title">
+      <a href={`/tin-tuc/${data.slug}/`}>{data.title}</a>
+    </h3>
+    {data.summary && <p class="news-card__summary">{data.summary}</p>}
+    <a class="news-card__readmore" href={`/tin-tuc/${data.slug}/`}>
+      Xem tiếp
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7"></path>
+      </svg>
+    </a>
+  </div>
+</article>
+
+<style>
+  .news-card {
+    background: var(--surface);
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .news-card:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--brand);
+  }
+
+  .news-card__cover {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
+  .news-card__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .news-card:hover .news-card__cover img { transform: scale(1.03); }
+
+  .news-card__category {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+  }
+  .news-card__category--brand { background: var(--brand); color: #fff; }
+  .news-card__category--accent { background: var(--accent-strong); color: #fff; }
+  .news-card__category--apple { background: var(--apple); color: #fff; }
+  .news-card__category--inline {
+    position: static;
+    display: inline-block;
+    margin-bottom: var(--space-2);
+  }
+
+  .news-card__content {
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .news-card__date {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--muted);
+    margin-bottom: var(--space-2);
+  }
+
+  .news-card__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: var(--space-2);
+  }
+  .news-card__title a {
+    color: var(--brand-ink);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .news-card__title a:hover { color: var(--brand); }
+
+  .news-card__summary {
+    font-size: var(--text-base);
+    color: var(--muted);
+    line-height: var(--leading);
+    flex: 1;
+    margin-bottom: var(--space-3);
+  }
+
+  .news-card__readmore {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    color: var(--brand);
+    text-decoration: none;
+    transition: color 0.2s ease, gap 0.2s ease;
+  }
+  .news-card__readmore:hover { color: var(--brand-ink); gap: var(--space-3); }
+  .news-card__readmore svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Compact variant: horizontal layout on desktop */
+  .news-card--compact {
+    flex-direction: row;
+  }
+  .news-card--compact .news-card__cover {
+    width: 200px;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+  }
+  .news-card--compact .news-card__content { padding: var(--space-4); }
+  @media (max-width: 767px) {
+    .news-card--compact { flex-direction: column; }
+    .news-card--compact .news-card__cover { width: 100%; aspect-ratio: 16/9; }
+  }
+
+  /* Featured variant: larger, more prominent */
+  .news-card--featured .news-card__title { font-size: var(--text-xl); }
+  .news-card--featured .news-card__summary { font-size: var(--text-lg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .news-card, .news-card__cover img, .news-card__readmore { transition: none; }
+  }
+</style>

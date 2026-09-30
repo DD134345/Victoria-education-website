@@ -1,0 +1,197 @@
+---
+// FeeTable component (WEB-07b). For "Chính sách học phí" page (§6.3).
+// Renders fee data as HTML <table> with numbers formatted vi-VN, "đ" suffix.
+// Shows "Áp dụng từ" date. Past years have banner "Năm học đã qua".
+import { formatVnDate } from '../lib/dates';
+import Prose from './Prose.astro';
+
+interface Props {
+  /** School year (e.g., "2025-2026") */
+  schoolYear: string;
+  /** Effective from date */
+  effectiveFrom: Date;
+  /** Fee rows */
+  rows: Array<{
+    item: string;
+    amountVnd: number;
+    unit: string;
+    note?: string;
+  }>;
+  /** Whether this is a past school year */
+  isPast?: boolean;
+  /** Policy text (Markdown/HTML) */
+  policyText?: string;
+  /** Links to past years */
+  pastYears?: Array<{ label: string; href: string }>;
+}
+
+const { schoolYear, effectiveFrom, rows, isPast = false, policyText, pastYears } = Astro.props;
+
+const formatter = new Intl.NumberFormat('vi-VN');
+---
+
+<section class="fee-table" aria-labelledby="fee-table-heading">
+  {isPast && (
+    <div class="fee-table__banner" role="status">
+      Năm học đã qua — chỉ tham khảo
+    </div>
+  )}
+
+  <header class="fee-table__header">
+    <h2 id="fee-table-heading" class="fee-table__heading">
+      Học phí năm học {schoolYear}
+    </h2>
+    <p class="fee-table__effective">
+      Áp dụng từ: <time datetime={effectiveFrom.toISOString()}>{formatVnDate(effectiveFrom)}</time>
+    </p>
+  </header>
+
+  {policyText && (
+    <div class="fee-table__policy">
+      <Prose>{policyText}</Prose>
+    </div>
+  )}
+
+  <div class="fee-table__wrapper">
+    <table class="fee-table__table">
+      <caption class="sr-only">Chi tiết học phí năm học {schoolYear}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Khoản thu</th>
+          <th scope="col" style="text-align: right;">Số tiền</th>
+          <th scope="col">Đơn vị</th>
+          <th scope="col">Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(row => (
+          <tr>
+            <td>{row.item}</td>
+            <td style="text-align: right;" class="fee-table__amount">
+              {formatter.format(row.amountVnd)}<span class="fee-table__unit">đ</span>
+            </td>
+            <td>{row.unit}</td>
+            <td>{row.note || '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {pastYears && pastYears.length > 0 && (
+    <nav class="fee-table__archive" aria-label="Các năm học trước">
+      <h3 class="fee-table__archive-title">Các năm học trước</h3>
+      <ul class="fee-table__archive-list">
+        {pastYears.map(year => (
+          <li>
+            <a href={year.href} class="fee-table__archive-link">{year.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )}
+</section>
+
+<style>
+  .fee-table__banner {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-6);
+    font-weight: 600;
+    color: var(--accent-ink);
+    text-align: center;
+  }
+
+  .fee-table__header { margin-bottom: var(--space-6); }
+  .fee-table__heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin: 0 0 var(--space-2);
+  }
+  .fee-table__effective {
+    font-size: var(--text-base);
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .fee-table__policy { margin-bottom: var(--space-6); }
+
+  .fee-table__wrapper { overflow-x: auto; margin-bottom: var(--space-8); }
+  .fee-table__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    min-width: 500px;
+  }
+  .fee-table__table caption { display: none; }
+  .fee-table__table th,
+  .fee-table__table td {
+    padding: var(--space-3);
+    border: 1px solid var(--brand-tint);
+    text-align: left;
+    vertical-align: top;
+  }
+  .fee-table__table th {
+    background: var(--brand-soft);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--brand-ink);
+    white-space: nowrap;
+  }
+  .fee-table__table tbody tr:nth-child(even) td { background: var(--brand-soft); }
+  .fee-table__table td { color: var(--ink); line-height: var(--leading); }
+  .fee-table__amount {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .fee-table__unit {
+    font-weight: 400;
+    margin-left: var(--space-1);
+    color: var(--muted);
+  }
+
+  .fee-table__archive-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin: 0 0 var(--space-4);
+  }
+  .fee-table__archive-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .fee-table__archive-link {
+    display: inline-block;
+    padding: var(--space-2) var(--space-4);
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-pill);
+    color: var(--brand-ink);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .fee-table__archive-link:hover {
+    background: var(--brand-tint);
+    border-color: var(--brand);
+    color: var(--brand);
+  }
+  .fee-table__archive-link:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fee-table__archive-link { transition: none; }
+  }
+</style>

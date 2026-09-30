@@ -1,0 +1,151 @@
+---
+// NoticeItem component (WEB-07b). For "Thông báo" collection.
+// Shows: title, date, valid_until, summary, "Còn hiệu lực" / "Hết hiệu lực" badge.
+// Only renders approved entries. Pink accent for urgency/warmth.
+import { formatVnDate as formatDate } from '../lib/dates';
+
+interface Props {
+  /** Notice entry from getPublished('notices') */
+  entry: {
+    data: {
+      title: string;
+      date: Date;
+      valid_until?: Date;
+      summary?: string;
+      slug: string;
+    };
+  };
+  /** Variant: 'default' | 'compact' */
+  variant?: 'default' | 'compact';
+}
+
+const { entry, variant = 'default' } = Astro.props;
+const { data } = entry;
+const now = new Date();
+const isValid = data.valid_until ? data.valid_until >= now : true;
+---
+
+<article class="notice-item notice-item--{variant} notice-item--{isValid ? 'valid' : 'expired'}">
+  <header class="notice-item__header">
+    <h3 class="notice-item__title">
+      <a href={`/thong-bao/${data.slug}/`}>{data.title}</a>
+    </h3>
+    <div class="notice-item__meta">
+      <time class="notice-item__date" datetime={data.date.toISOString()}>
+        Ngày đăng: {formatDate(data.date)}
+      </time>
+      {data.valid_until && (
+        <time class="notice-item__valid" datetime={data.valid_until.toISOString()}>
+          Hiệu lực đến: {formatDate(data.valid_until)}
+        </time>
+      )}
+      <span class={`notice-item__status notice-item__status--${isValid ? 'valid' : 'expired'}`}>
+        {isValid ? 'Còn hiệu lực' : 'Hết hiệu lực'}
+      </span>
+    </div>
+  </header>
+  {data.summary && <p class="notice-item__summary">{data.summary}</p>}
+  <footer class="notice-item__footer">
+    <a class="notice-item__link" href={`/thong-bao/${data.slug}/`}>
+      Xem chi tiết
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7"></path>
+      </svg>
+    </a>
+  </footer>
+</article>
+
+<style>
+  .notice-item {
+    background: var(--surface);
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .notice-item:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--accent-strong);
+  }
+  .notice-item--expired { opacity: 0.7; border-color: var(--accent-soft); }
+  .notice-item--compact { padding: var(--space-4); }
+
+  .notice-item__header { margin-bottom: var(--space-3); }
+  .notice-item__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+    line-height: 1.3;
+  }
+  .notice-item__title a {
+    color: var(--brand-ink);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .notice-item__title a:hover { color: var(--brand); }
+  .notice-item--compact .notice-item__title { font-size: var(--text-base); }
+
+  .notice-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .notice-item__date { color: var(--muted); }
+  .notice-item__valid { color: var(--muted); }
+
+  .notice-item__status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-pill);
+  }
+  .notice-item__status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .notice-item__status--valid {
+    color: var(--brand-ink);
+    background: var(--brand-soft);
+  }
+  .notice-item__status--valid::before { background: var(--brand); }
+  .notice-item__status--expired {
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+  }
+  .notice-item__status--expired::before { background: var(--accent-strong); }
+
+  .notice-item__summary {
+    font-size: var(--text-base);
+    color: var(--ink);
+    line-height: var(--leading);
+    margin-bottom: var(--space-3);
+  }
+
+  .notice-item__footer { padding-top: var(--space-3); border-top: 1px solid var(--brand-tint); }
+  .notice-item__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    color: var(--accent-strong);
+    text-decoration: none;
+    transition: color 0.2s ease, gap 0.2s ease;
+  }
+  .notice-item__link:hover { color: var(--accent-ink); gap: var(--space-3); }
+  .notice-item__link svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .notice-item, .notice-item__title a, .notice-item__link { transition: none; }
+  }
+</style>

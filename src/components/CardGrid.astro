@@ -1,0 +1,241 @@
+---
+// CardGrid component (WEB-07b). Responsive grid for cards.
+// Mobile-first: 1 col at 360px, 2 col at 768px, 3 col at 1100px.
+// Uses soft rounded cards with brand-tint borders, subtle shadows.
+import { Image } from 'astro:assets';
+
+interface Card {
+  /** Card title */
+  title: string;
+  /** Card description/summary */
+  description?: string;
+  /** Optional image */
+  image?: ImageMetadata;
+  /** Image alt text */
+  imageAlt?: string;
+  /** Optional link for the whole card */
+  href?: string;
+  /** Optional badge/tag */
+  badge?: string;
+  /** Badge variant: 'brand' | 'accent' | 'apple' */
+  badgeVariant?: 'brand' | 'accent' | 'apple';
+  /** Optional footer text (e.g., date, category) */
+  footer?: string;
+}
+
+interface Props {
+  /** Array of card data */
+  cards: Card[];
+  /** Section heading (optional) */
+  heading?: string;
+  /** Section subheading (optional) */
+  subheading?: string;
+  /** Grid columns on desktop: 2 | 3 */
+  cols?: 2 | 3;
+  /** Gap size */
+  gap?: 'md' | 'lg';
+  /** Eyebrow label (max 1 per 3 sections site-wide) */
+  eyebrow?: string;
+}
+
+const {
+  cards,
+  heading,
+  subheading,
+  cols = 3,
+  gap = 'lg',
+  eyebrow,
+} = Astro.props;
+
+const gapMap = { md: 'var(--space-4)', lg: 'var(--space-6)' };
+---
+
+<section class="card-grid" aria-labelledby={heading ? 'card-grid-heading' : undefined}>
+  <div class="container">
+    {(heading || eyebrow) && (
+      <header class="card-grid__header">
+        {eyebrow && <p class="card-grid__eyebrow">{eyebrow}</p>}
+        {heading && <h2 id="card-grid-heading" class="card-grid__heading">{heading}</h2>}
+        {subheading && <p class="card-grid__subheading">{subheading}</p>}
+      </header>
+    )}
+    <ul class="card-grid__list" style="--grid-gap: {gapMap[gap]}; --grid-cols: {cols};">
+      {cards.map((card) => (
+        <li class="card-grid__item">
+          <article class="card">
+            {card.image && (
+              <div class="card__media">
+                <Image src={card.image} alt={card.imageAlt || ''} loading="lazy" />
+                {card.badge && (
+                  <span class={`card__badge card__badge--${card.badgeVariant || 'brand'}`}>
+                    {card.badge}
+                  </span>
+                )}
+              </div>
+            )}
+            {card.href ? (
+              <a href={card.href} class="card__link" aria-label={card.title}>
+                <div class="card__content">
+                  {card.badge && !card.image && (
+                    <span class={`card__badge card__badge--inline card__badge--${card.badgeVariant || 'brand'}`}>
+                      {card.badge}
+                    </span>
+                  )}
+                  <h3 class="card__title">{card.title}</h3>
+                  {card.description && <p class="card__description">{card.description}</p>}
+                  {card.footer && <footer class="card__footer">{card.footer}</footer>}
+                </div>
+              </a>
+            ) : (
+              <div class="card__content">
+                {card.badge && !card.image && (
+                  <span class={`card__badge card__badge--inline card__badge--${card.badgeVariant || 'brand'}`}>
+                    {card.badge}
+                  </span>
+                )}
+                <h3 class="card__title">{card.title}</h3>
+                {card.description && <p class="card__description">{card.description}</p>}
+                {card.footer && <footer class="card__footer">{card.footer}</footer>}
+              </div>
+            )}
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .card-grid__header { margin-bottom: var(--space-8); text-align: center; }
+  .card-grid__eyebrow {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand);
+    background: var(--brand-tint);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    margin-bottom: var(--space-3);
+  }
+  .card-grid__heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: var(--space-2);
+  }
+  .card-grid__subheading {
+    font-size: var(--text-base);
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 auto;
+  }
+
+  .card-grid__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--grid-gap);
+  }
+  @media (min-width: 768px) {
+    .card-grid__list { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 1100px) {
+    .card-grid__list { grid-template-columns: repeat(var(--grid-cols), 1fr); }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+  }
+  .card:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--brand);
+    transform: translateY(-2px);
+  }
+  .card:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-lg);
+  }
+
+  .card__link {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card__link:focus-visible {
+    outline: none;
+  }
+  .card:focus-within .card__link {
+    outline: 3px solid var(--focus);
+    outline-offset: -3px;
+    border-radius: var(--radius-lg);
+  }
+
+  .card__media { position: relative; overflow: hidden; aspect-ratio: 4 / 3; }
+  .card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+  .card:hover .card__media img { transform: scale(1.03); }
+
+  .card__badge {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+  }
+  .card__badge--brand { background: var(--brand); color: #fff; }
+  .card__badge--accent { background: var(--accent-strong); color: #fff; }
+  .card__badge--apple { background: var(--apple); color: #fff; }
+  .card__badge--inline {
+    position: static;
+    display: inline-block;
+    margin-bottom: var(--space-2);
+  }
+
+  .card__content { padding: var(--space-4); display: flex; flex-direction: column; flex: 1; }
+  .card__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: var(--space-2);
+    line-height: 1.3;
+  }
+  .card__description {
+    font-size: var(--text-base);
+    color: var(--muted);
+    line-height: var(--leading);
+    flex: 1;
+    margin-bottom: var(--space-3);
+  }
+  .card__footer {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--brand-tint);
+  }
+
+  /* Reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    .card, .card__media img { transition: none; }
+  }
+</style>

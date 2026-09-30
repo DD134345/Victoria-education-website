@@ -1,0 +1,109 @@
+---
+// Breadcrumbs component (WEB-07b). For inner pages.
+// Builds from URL pathname + site-config.json. JSON-LD BreadcrumbList in BaseLayout.
+// Mobile-first: collapses middle items on narrow screens.
+import { site } from '../lib/site';
+
+interface BreadcrumbItem {
+  label: string;
+  href: string;
+}
+
+interface Props {
+  /** Explicit breadcrumb items (overrides auto-build) */
+  items?: BreadcrumbItem[];
+  /** Current page title (for last item, non-clickable) */
+  current?: string;
+  /** Hide on homepage */
+  hideOnHome?: boolean;
+}
+
+const { items: explicitItems, current, hideOnHome = true } = Astro.props;
+
+const isHome = Astro.url.pathname === '/';
+
+// Build breadcrumbs from pathname if not explicitly provided
+let items: BreadcrumbItem[] = explicitItems ?? [];
+if (!explicitItems) {
+  const segments = Astro.url.pathname.split('/').filter(Boolean);
+  items = [{ label: site.name, href: '/' }];
+  let path = '';
+  for (const segment of segments) {
+    path += `/${segment}`;
+    // Try to get a readable label from the segment
+    const label = segment
+      .split('-')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    items.push({ label, href: `${path}/` });
+  }
+}
+// Last item is current page (non-link) if current provided
+if (current && items.length > 0) {
+  items[items.length - 1] = { ...items[items.length - 1], label: current };
+}
+---
+
+{!hideOnHome || !isHome ? (
+<>
+  <nav class="breadcrumbs" aria-label="Đường dẫn">
+    <ol class="breadcrumbs__list" itemscope itemtype="https://schema.org/BreadcrumbList">
+      {items.map((item, index) => (
+        <li class="breadcrumbs__item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          {index === items.length - 1 && current ? (
+            <span itemprop="name">{item.label}</span>
+          ) : (
+            <a itemprop="item" href={item.href}><span itemprop="name">{item.label}</span></a>
+          )}
+          <meta itemprop="position" content={String(index + 1)} />
+          {index < items.length - 1 && (
+            <svg class="breadcrumbs__separator" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          )}
+        </li>
+      ))}
+    </ol>
+  </nav>
+</>
+) : null}
+
+<style>
+  .breadcrumbs { padding: var(--space-4) 0; }
+  .breadcrumbs__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-sm);
+  }
+  .breadcrumbs__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--muted);
+  }
+  .breadcrumbs__item a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+  }
+  .breadcrumbs__item a:hover { color: var(--brand); }
+  .breadcrumbs__item:last-child { color: var(--ink); font-weight: 500; }
+  .breadcrumbs__separator {
+    width: 16px;
+    height: 16px;
+    color: var(--brand-tint);
+    flex-shrink: 0;
+  }
+
+  /* Mobile: hide middle items if too many */
+  @media (max-width: 480px) {
+    .breadcrumbs__list { overflow-x: auto; padding-bottom: var(--space-1); }
+    .breadcrumbs__item:nth-child(n+3):nth-last-child(n+2) { display: none; }
+  }
+</style>

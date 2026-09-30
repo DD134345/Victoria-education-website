@@ -1,0 +1,107 @@
+---
+// SisterSchools component (WEB-07b). For footer "Thành viên Hệ thống Giáo dục Victoria" (D14).
+// Links to victoriathanglong.edu.vn and other Victoria campuses.
+// List confirmed by owner. Green (Victoria olive #87A111) for the badge.
+import sisterSchoolsData from '../data/sister-schools.json';
+
+interface SisterSchool {
+  name: string;
+  url: string;
+  logo?: string;
+}
+
+interface Props {
+  /** Override schools (otherwise reads from sister-schools.json) */
+  schools?: SisterSchool[];
+  /** Heading for the section */
+  heading?: string;
+}
+
+const { schools: overrideSchools, heading = 'Thành viên Hệ thống Giáo dục Victoria' } = Astro.props;
+const schools = overrideSchools || (sisterSchoolsData as SisterSchool[]);
+---
+
+<section class="sister-schools" aria-labelledby="sister-schools-heading">
+  <h3 id="sister-schools-heading" class="sister-schools__heading">{heading}</h3>
+  <ul class="sister-schools__list">
+    {schools.map(school => (
+      <li class="sister-schools__item">
+        {school.logo ? (
+          <a href={school.url} target="_blank" rel="noopener noreferrer" class="sister-schools__link" aria-label={school.name}>
+            <img src={school.logo} alt="" loading="lazy" width={120} height={40} />
+            <span class="sister-schools__name">{school.name}</span>
+          </a>
+        ) : (
+          <a href={school.url} target="_blank" rel="noopener noreferrer" class="sister-schools__link sister-schools__link--text" aria-label={school.name}>
+            {school.name}
+          </a>
+        )}
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .sister-schools__heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: #87a111; /* Victoria olive per D3 */
+    margin: 0 0 var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .sister-schools__heading::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: #87a111;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'/%3E%3Cpath d='M2 17l10 5 10-5'/%3E%3Cpath d='M2 12l10 5 10-5'/%3E%3C/svg%3E") center / contain no-repeat;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'/%3E%3Cpath d='M2 17l10 5 10-5'/%3E%3Cpath d='M2 12l10 5 10-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  .sister-schools__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .sister-schools__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--text-base);
+    transition: color 0.2s ease;
+  }
+  .sister-schools__link:hover { color: #87a111; }
+  .sister-schools__link:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  .sister-schools__link--text {
+    padding: var(--space-2) var(--space-3);
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-pill);
+  }
+  .sister-schools__link--text:hover { background: var(--brand-tint); color: var(--brand-ink); }
+
+  .sister-schools__name { display: none; }
+  @media (min-width: 480px) { .sister-schools__name { display: inline; } }
+
+  .sister-schools__item img { filter: grayscale(0.3) opacity(0.8); transition: filter 0.2s ease; }
+  .sister-schools__link:hover img { filter: grayscale(0) opacity(1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sister-schools__link, .sister-schools__item img { transition: none; }
+  }
+</style>

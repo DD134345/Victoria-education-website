@@ -1,0 +1,239 @@
+---
+// MobileNav component (WEB-07a). Mobile navigation drawer.
+// Uses checkbox hack (zero-JS) + minimal script for body scroll lock and trap focus.
+// Opens from Header burger button via shared #nav-toggle checkbox.
+import { buildNav } from '../lib/nav';
+
+const items = await buildNav();
+const here = Astro.url.pathname;
+const current = (href: string) => (here === href ? 'page' : undefined);
+---
+
+<input type="checkbox" id="mobile-nav-toggle" class="mobile-nav__toggle" aria-hidden="true" tabindex="-1" />
+<label for="mobile-nav-toggle" class="mobile-nav__overlay" aria-hidden="true" tabindex="-1"></label>
+
+<nav id="mobile-nav" class="mobile-nav" aria-label="Menu di động" role="navigation" inert aria-hidden="true">
+  <header class="mobile-nav__header">
+    <span class="mobile-nav__title">Menu</span>
+    <label for="mobile-nav-toggle" class="mobile-nav__close" aria-label="Đóng menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </label>
+  </header>
+  <ul class="mobile-nav__list">
+    {items.map(item => (
+      <li class={item.children ? 'mobile-nav__item--has-sub' : ''}>
+        <a href={item.href} aria-current={current(item.href)} class="mobile-nav__link">
+          {item.label}
+          {item.children && (
+            <svg class="mobile-nav__sub-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          )}
+        </a>
+        {item.children && (
+          <ul class="mobile-nav__sub">
+            {item.children.map(c => (
+              <li><a href={c.href} aria-current={current(c.href)} class="mobile-nav__sub-link">{c.label}</a></li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<script is:inline>
+  // Minimal JS: trap focus inside drawer when open, lock body scroll
+  const toggle = document.getElementById('mobile-nav-toggle');
+  const drawer = document.getElementById('mobile-nav');
+  const overlay = document.querySelector('.mobile-nav__overlay');
+  const closeBtn = document.querySelector('.mobile-nav__close');
+  const focusable = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  function trapFocus(e) {
+    if (e.key !== 'Tab') return;
+    const items = drawer?.querySelectorAll(focusable);
+    if (!items?.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  function syncState() {
+    const isOpen = toggle?.checked ?? false;
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    drawer?.setAttribute('aria-hidden', String(!isOpen));
+    drawer?.toggleAttribute('inert', !isOpen);
+    overlay?.setAttribute('aria-hidden', String(!isOpen));
+    if (isOpen) {
+      document.addEventListener('keydown', trapFocus);
+      // Focus first link
+      const firstLink = drawer?.querySelector('.mobile-nav__link');
+      firstLink?.focus();
+    } else {
+      document.removeEventListener('keydown', trapFocus);
+    }
+  }
+
+  if (toggle && drawer) {
+    // Sync initial state
+    syncState();
+    toggle.addEventListener('change', syncState);
+    overlay?.addEventListener('click', () => { toggle.checked = false; syncState(); });
+    closeBtn?.addEventListener('click', () => { toggle.checked = false; syncState(); });
+    // Close on link click (for anchor links)
+    drawer.querySelectorAll('a[href^="/"]').forEach(a => {
+      a.addEventListener('click', () => { toggle.checked = false; syncState(); });
+    });
+  }
+</script>
+
+<style>
+  .mobile-nav__toggle { position: absolute; opacity: 0; pointer-events: none; }
+  .mobile-nav__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 38, 20, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 90;
+  }
+  .mobile-nav__toggle:checked ~ .mobile-nav__overlay {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 320px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  @media (min-width: 1100px) {
+    .mobile-nav { display: none; }
+  }
+  .mobile-nav__toggle:checked ~ .mobile-nav {
+    transform: translateX(0);
+  }
+
+  .mobile-nav__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--brand-tint);
+    background: var(--brand);
+  }
+  .mobile-nav__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: #fff;
+  }
+  .mobile-nav__close {
+    display: grid;
+    place-items: center;
+    width: var(--tap);
+    height: var(--tap);
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+  }
+  .mobile-nav__close:hover { background: var(--brand-ink); }
+  .mobile-nav__close:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .mobile-nav__list {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    flex: 1;
+  }
+  .mobile-nav__item--has-sub { position: relative; }
+  .mobile-nav__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--tap);
+    padding: var(--space-3) 0;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--text-base);
+    border-bottom: 1px solid var(--brand-tint);
+    transition: color 0.2s ease;
+  }
+  .mobile-nav__link:hover,
+  .mobile-nav__link[aria-current='page'] { color: var(--brand); }
+  .mobile-nav__sub-arrow {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: transform 0.2s ease;
+  }
+  .mobile-nav__item--has-sub[open] > .mobile-nav__link .mobile-nav__sub-arrow,
+  .mobile-nav__item--has-sub:hover > .mobile-nav__link .mobile-nav__sub-arrow,
+  .mobile-nav__item--has-sub:focus-within > .mobile-nav__link .mobile-nav__sub-arrow {
+    transform: rotate(180deg);
+  }
+
+  .mobile-nav__sub {
+    display: none;
+    list-style: none;
+    margin: var(--space-2) 0 0;
+    padding: 0 0 0 var(--space-4);
+    border-left: 2px solid var(--brand-tint);
+  }
+  .mobile-nav__item--has-sub[open] > .mobile-nav__sub,
+  .mobile-nav__item--has-sub:hover > .mobile-nav__sub,
+  .mobile-nav__item--has-sub:focus-within > .mobile-nav__sub {
+    display: block;
+  }
+  .mobile-nav__sub-link {
+    display: block;
+    padding: var(--space-2) 0;
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 400;
+    font-size: var(--text-sm);
+    transition: color 0.2s ease;
+  }
+  .mobile-nav__sub-link:hover,
+  .mobile-nav__sub-link[aria-current='page'] { color: var(--brand-ink); }
+
+  /* Zero-JS fallback: show submenus on hover/focus */
+  @media (scripting: none) {
+    .mobile-nav__sub { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-nav, .mobile-nav__overlay, .mobile-nav__sub-arrow { transition: none; }
+  }
+</style>

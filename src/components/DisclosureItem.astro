@@ -1,0 +1,183 @@
+---
+// DisclosureItem component (WEB-07b). For "Công khai" collection (TT 09/2024/TT-BGDĐT).
+// Always shows: "Ngày công khai" + "Cập nhật lần cuối" + PDF link if any.
+// Hidden keyword data-compliance-key for workflow G keyword check.
+// Green = trust colour for legal disclosure items.
+interface Props {
+  /** Disclosure entry from getPublished('disclosure') */
+  entry: {
+    data: {
+      group: 'thong-tin-chung' | 'tai-chinh' | 'dieu-kien-dam-bao-chat-luong' | 'ke-hoach-ket-qua' | 'bao-cao-thuong-nien';
+      title: string;
+      school_year: string;
+      published_at: string; // DD/MM/YYYY
+      updated_at: string;   // DD/MM/YYYY
+      pdf?: string;         // /cong-khai/...pdf
+      superseded_by?: string;
+    };
+  };
+  /** Variant: 'default' | 'compact' */
+  variant?: 'default' | 'compact';
+}
+
+const { entry, variant = 'default' } = Astro.props;
+const { data } = entry;
+
+const groupLabels: Record<string, string> = {
+  'thong-tin-chung': 'Thông tin chung',
+  'tai-chinh': 'Tài chính',
+  'dieu-kien-dam-bao-chat-luong': 'Điều kiện đảm bảo chất lượng',
+  'ke-hoach-ket-qua': 'Kế hoạch và kết quả',
+  'bao-cao-thuong-nien': 'Báo cáo thường niên',
+};
+---
+
+<article class="disclosure-item disclosure-item--{variant}" data-compliance-key={data.group}>
+  <header class="disclosure-item__header">
+    <span class="disclosure-item__group">{groupLabels[data.group]}</span>
+    <h3 class="disclosure-item__title">{data.title}</h3>
+    <span class="disclosure-item__year">{data.school_year}</span>
+  </header>
+
+  <dl class="disclosure-item__dates">
+    <div class="disclosure-item__date-pair">
+      <dt>Ngày công khai</dt>
+      <dd>{data.published_at}</dd>
+    </div>
+    <div class="disclosure-item__date-pair">
+      <dt>Cập nhật lần cuối</dt>
+      <dd>{data.updated_at}</dd>
+    </div>
+  </dl>
+
+  {data.pdf && (
+    <a class="disclosure-item__pdf" href={data.pdf} target="_blank" rel="noopener noreferrer">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+      <span>Xem PDF</span>
+    </a>
+  )}
+
+  {data.superseded_by && (
+    <p class="disclosure-item__superseded">
+      Đã được thay thế bởi: <a href={data.superseded_by}>{data.superseded_by}</a>
+    </p>
+  )}
+</article>
+
+<style>
+  .disclosure-item {
+    background: var(--surface);
+    border: 1px solid var(--brand-tint);
+    border-left: 4px solid var(--brand);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .disclosure-item:hover {
+    box-shadow: var(--shadow);
+    border-left-color: var(--brand-ink);
+  }
+  .disclosure-item--compact { padding: var(--space-4); }
+
+  .disclosure-item__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+  .disclosure-item__group {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--brand);
+    background: var(--brand-soft);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+  }
+  .disclosure-item__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--brand-ink);
+    flex: 1;
+    min-width: 200px;
+    margin: 0;
+  }
+  .disclosure-item--compact .disclosure-item__title { font-size: var(--text-base); }
+  .disclosure-item__year {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--muted);
+    background: var(--brand-tint);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+  }
+
+  .disclosure-item__dates {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
+    background: var(--brand-soft);
+    border-radius: var(--radius-md);
+  }
+  .disclosure-item--compact .disclosure-item__dates { grid-template-columns: 1fr; gap: var(--space-3); padding: var(--space-3); }
+  .disclosure-item__date-pair { display: flex; flex-direction: column; gap: var(--space-1); }
+  .disclosure-item__date-pair dt {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--brand-ink);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .disclosure-item__date-pair dd {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    color: var(--ink);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .disclosure-item__pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-base);
+    color: var(--brand);
+    text-decoration: none;
+    padding: var(--space-2) var(--space-4);
+    background: var(--brand-soft);
+    border-radius: var(--radius-pill);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .disclosure-item__pdf:hover {
+    background: var(--brand-tint);
+    color: var(--brand-ink);
+  }
+  .disclosure-item__pdf svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .disclosure-item__superseded {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--brand-tint);
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+  .disclosure-item__superseded a { color: var(--brand); text-decoration: underline; }
+  .disclosure-item__superseded a:hover { color: var(--brand-ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .disclosure-item, .disclosure-item__pdf { transition: none; }
+  }
+</style>
