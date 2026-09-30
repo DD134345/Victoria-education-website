@@ -1,0 +1,96 @@
+---
+// DEV ONLY: /khung-anh/ — every photo frame on the site, the exact file name that
+// fills it, and whether it is filled yet. Never generated in a production build
+// (getStaticPaths returns nothing outside `npm run dev`).
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PhotoFrame from '../../components/PhotoFrame.astro';
+import { HOME_SLOTS, bannerKey, hasPhoto, photosIn } from '../../lib/photos';
+import { visibleRoutes, DISCLOSURE_GROUPS, labelFor } from '../../lib/nav';
+
+export const getStaticPaths = () => (import.meta.env.DEV ? [{ params: { p: undefined } }] : []);
+
+const routes = Object.keys(await visibleRoutes()).filter((r) => r !== '/');
+for (const g of DISCLOSURE_GROUPS) routes.push(`/cong-khai/${g.slug}/`);
+routes.push('/cong-khai/luu-tru/', '/tin-tuc/', '/thong-bao/');
+const extraLabels: Record<string, string> = {
+  '/chinh-sach-bao-mat/': 'Chính sách bảo mật', '/cong-khai/luu-tru/': 'Lưu trữ công khai',
+  ...Object.fromEntries(DISCLOSURE_GROUPS.map((g) => [`/cong-khai/${g.slug}/`, `Công khai – ${g.label}`])),
+};
+const banners = [...new Set(routes)].sort().map((r) => ({ route: r, key: bannerKey(r), label: labelFor(r) ?? extraLabels[r] ?? r }));
+const facility = photosIn('co-so-vat-chat');
+const filled = (k: string) => hasPhoto(k);
+const total = HOME_SLOTS.length + banners.length;
+const done = HOME_SLOTS.filter((s) => filled(s.key)).length + banners.filter((b) => filled(b.key)).length;
+---
+<BaseLayout title="Khung ảnh (dev)" description="Danh sách khung ảnh của website (chỉ hiện khi chạy dev).">
+  <main class="container kh">
+    <h1>Khung ảnh</h1>
+    <p class="kh__lead">
+      Thả ảnh vào thư mục <code>website/src/assets/photos/</code> với đúng tên file ghi trong mỗi khung (.jpg .png .webp đều được),
+      lưu lại là ảnh hiện ngay. Mô tả ảnh (alt) sửa trong <code>src/data/photos.json</code>.
+      Trang này chỉ có khi chạy <code>npm run dev</code>, không xuất bản.
+    </p>
+    <p class="kh__score"><strong>{done}/{total}</strong> khung cố định đã có ảnh · <strong>{facility.length}</strong> ảnh cơ sở vật chất</p>
+
+    <h2>Trang chủ</h2>
+    <ul class="kh__grid" role="list">
+      {HOME_SLOTS.map((s) => (
+        <li class="kh__item">
+          <PhotoFrame photoKey={s.key} shape={s.shape} ratio={s.ratio} sizes="300px" decorate={false} />
+          <p class="kh__where">{s.where}</p>
+          <p class:list={['kh__state', { 'kh__state--ok': filled(s.key) }]}>{filled(s.key) ? 'Đã có ảnh' : 'Chưa có ảnh'}</p>
+        </li>
+      ))}
+    </ul>
+
+    <h2>Cơ sở vật chất <small>(mọi ảnh trong thư mục <code>co-so-vat-chat/</code>)</small></h2>
+    {facility.length === 0 ? (
+      <p class="kh__empty">Chưa có ảnh. Đặt tên theo thứ tự: <code>01-phong-hoc.jpg</code>, <code>02-san-choi.jpg</code>… Trang chủ hiện 4 ảnh đầu; trang Cơ sở vật chất hiện tất cả.</p>
+    ) : (
+      <ul class="kh__grid" role="list">
+        {facility.map((f) => (
+          <li class="kh__item"><PhotoFrame photoKey={f.key} sizes="300px" decorate={false} /><p class="kh__where"><code>{f.key}</code></p></li>
+        ))}
+      </ul>
+    )}
+
+    <h2>Ảnh đầu trang (banner) của từng trang</h2>
+    <ul class="kh__grid kh__grid--small" role="list">
+      {banners.map((b) => (
+        <li class="kh__item">
+          <PhotoFrame photoKey={b.key} shape="arch" ratio="5 / 4" sizes="240px" decorate={false} />
+          <p class="kh__where">{b.label} <span class="kh__route">{b.route}</span></p>
+          <p class:list={['kh__state', { 'kh__state--ok': filled(b.key) }]}>{filled(b.key) ? 'Đã có ảnh' : 'Chưa có ảnh'}</p>
+        </li>
+      ))}
+    </ul>
+
+    <h2>Giáo viên và lớp học</h2>
+    <ul class="kh__list">
+      <li>Ảnh giáo viên: <code>giao-vien/&lt;tên không dấu&gt;.jpg</code>, dọc 4:5. Ví dụ "Cô Lan Anh" → <code>giao-vien/co-lan-anh.jpg</code>. Chỉ hiện khi hồ sơ giáo viên đã được duyệt và có đồng ý dùng ảnh.</li>
+      <li>Ảnh lớp: <code>lop-hoc/&lt;tên lớp không dấu&gt;.jpg</code>. Ví dụ "Mầm 1" → <code>lop-hoc/mam-1.jpg</code>.</li>
+    </ul>
+    <div class="kh__demo">
+      <PhotoFrame photoKey="giao-vien/co-lan-anh" shape="portrait" sizes="220px" />
+      <PhotoFrame photoKey="lop-hoc/mam-1" tone="pink" sizes="300px" />
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .kh { padding: var(--space-10) 0 var(--space-16); }
+  .kh h2 { margin-top: var(--space-12); }
+  .kh h2 small { font-size: var(--text-sm); font-weight: 500; color: var(--muted); }
+  .kh__lead { max-width: 70ch; }
+  .kh__score { padding: var(--space-3) var(--space-4); background: var(--brand-soft); border-radius: 14px; display: inline-block; }
+  .kh__grid { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-8) var(--space-6); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .kh__grid--small { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .kh__where { margin: var(--space-3) 0 0; font-weight: 600; color: var(--brand-ink); font-size: var(--text-sm); }
+  .kh__route { display: block; font-weight: 400; color: var(--muted); font-family: ui-monospace, monospace; font-size: 12px; }
+  .kh__state { margin: var(--space-1) 0 0; font-size: 13px; font-weight: 700; color: var(--accent-ink); }
+  .kh__state--ok { color: var(--brand); }
+  .kh__list li { margin-bottom: var(--space-2); }
+  .kh__demo { display: grid; grid-template-columns: 200px 280px; gap: var(--space-10); margin-top: var(--space-6); }
+  .kh__empty { color: var(--muted); }
+  code { font-size: 0.9em; background: var(--brand-soft); padding: 0.1em 0.35em; border-radius: 6px; }
+</style>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Ảnh minh hoạ">
+  <title>Ảnh minh hoạ</title>
+  <defs>
+    <linearGradient id="demoNews1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e3ebc4"/>
+      <stop offset="0.55" stop-color="#f3f6e4"/>
+      <stop offset="1" stop-color="#ffedec"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#demoNews1)"/>
+  <circle cx="130" cy="110" r="95" fill="#536501" opacity="0.16"/>
+  <circle cx="690" cy="490" r="130" fill="#ff5a5a" opacity="0.16"/>
+  <circle cx="660" cy="120" r="34" fill="#8e9c21" opacity="0.35"/>
+  <g fill="none" stroke="#536501" stroke-width="6" stroke-linecap="round" opacity="0.55">
+    <path d="M120 470 C 160 410 230 400 270 440 C 230 480 160 490 120 470 Z"/>
+    <path d="M120 470 C 100 510 105 545 120 570"/>
+  </g>
+  <g fill="#ff5a5a" opacity="0.5">
+    <circle cx="600" cy="420" r="16"/>
+    <circle cx="632" cy="420" r="16"/>
+    <circle cx="616" cy="394" r="16"/>
+    <circle cx="616" cy="446" r="16"/>
+    <circle cx="616" cy="420" r="10" fill="#fff"/>
+  </g>
+  <text x="400" y="312" text-anchor="middle" font-family="sans-serif" font-size="46" font-weight="700" fill="#3b4a00">Ảnh minh hoạ</text>
+</svg>

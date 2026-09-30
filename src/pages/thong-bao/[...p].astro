@@ -1,9 +1,38 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Thông báo (WEB-09, section 6.3): valid notices first; expired ones stay listed
+// under "Đã hết hạn" (never on the homepage). Hidden until >= 1 approved notice.
 import PageLayout from '../../layouts/PageLayout.astro';
+import NoticeItem from '../../components/NoticeItem.astro';
 import { onlyIf } from '../../lib/nav';
+import { getNotices, entrySlug } from '../../lib/entries';
 export const getStaticPaths = () => onlyIf('/thong-bao/');
+
+const { active, expired } = await getNotices();
+const card = (e: (typeof active)[number]) => ({ data: { ...e.data, slug: entrySlug(e) } });
 ---
-<PageLayout title="Thông báo">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Thông báo" tone="pink" lead="Thông báo chính thức của nhà trường tới phụ huynh.">
+  {active.length > 0 && (
+    <section aria-labelledby="tb-active">
+      <h2 id="tb-active" class="list-title">Đang có hiệu lực</h2>
+      <ul class="notice-list" role="list">
+        {active.map((e, i) => (
+          <li data-reveal style={`--reveal-delay: ${(i % 4) * 70}ms;`}><NoticeItem entry={card(e)} /></li>
+        ))}
+      </ul>
+    </section>
+  )}
+  {expired.length > 0 && (
+    <section aria-labelledby="tb-expired" class="expired">
+      <h2 id="tb-expired" class="list-title">Đã hết hạn</h2>
+      <ul class="notice-list" role="list">
+        {expired.map((e) => (<li><NoticeItem entry={card(e)} variant="compact" /></li>))}
+      </ul>
+    </section>
+  )}
 </PageLayout>
+
+<style>
+  .list-title { font-size: var(--text-xl); margin-bottom: var(--space-5); }
+  .notice-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); max-width: 52rem; }
+  .expired { margin-top: var(--space-12); opacity: 0.9; }
+</style>

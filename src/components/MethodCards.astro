@@ -1,16 +1,16 @@
 ---
-// MethodCards component (WEB-07b). For "Phương pháp giáo dục" page (§6.3, §6.6 #7).
-// Each method: icon/illustration, title, short description, link to detail.
-// One H2 per method feeds homepage teaser. Soft rounded, green/pink accents.
+// MethodCards component (restyle-B). Four petal/leaf cards in a 2x2 clover:
+// each card keeps one sharpened corner facing the centre, alternating
+// green/pink tints, white dot in the middle. Stacks to 1 column on mobile.
 import { Image } from 'astro:assets';
 
 interface Method {
   /** Method title */
   title: string;
-  /** Short description for card */
-  description: string;
-  /** Link to detail page */
-  href: string;
+  /** Short description for card (omitted when empty) */
+  description?: string;
+  /** Link to detail page (omitted when empty, e.g. dev preview) */
+  href?: string;
   /** Icon name or custom SVG */
   icon?: string;
   /** Custom illustration */
@@ -35,10 +35,17 @@ interface Props {
 const { methods, heading, subheading, eyebrow } = Astro.props;
 
 const accentMap = {
-  brand: { color: 'var(--brand)', soft: 'var(--brand-soft)', tint: 'var(--brand-tint)' },
-  accent: { color: 'var(--accent-strong)', soft: 'var(--accent-soft)', tint: 'var(--accent)' },
-  apple: { color: 'var(--brand)', soft: 'var(--brand-soft)', tint: 'var(--brand-tint)' },
+  brand: { color: 'var(--brand)', soft: 'var(--brand-soft)' },
+  accent: { color: 'var(--accent-strong)', soft: 'var(--accent-soft)' },
+  apple: { color: 'var(--brand)', soft: 'var(--brand-soft)' },
 };
+
+/** Clover position class: sharpened corner faces the grid centre. */
+const cloverClass = (index: number): string =>
+  ['method-card--tl', 'method-card--tr', 'method-card--bl', 'method-card--br'][index % 4];
+
+const tintClass = (index: number): string =>
+  index % 2 === 0 ? 'method-card--green' : 'method-card--pink';
 
 const defaultIcons: Record<string, string> = {
   'montessori': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>`,
@@ -59,40 +66,51 @@ const defaultIcons: Record<string, string> = {
         {subheading && <p class="method-cards__subheading">{subheading}</p>}
       </header>
     )}
-    <ul class="method-cards__list">
-      {methods.map((method, index) => {
-        const accent = accentMap[method.accent || 'brand'];
-        return (
-          <li class="method-cards__item" style="--accent-color: {accent.color}; --accent-soft: {accent.soft}; --accent-tint: {accent.tint};">
-            <article class="method-card">
-              <div class="method-card__icon" aria-hidden="true">
-                {method.illustration ? (
-                  <Image src={method.illustration} alt={method.illustrationAlt || ''} loading="lazy" />
-                ) : method.icon ? (
-                  <div class="method-card__icon-svg" set:html={defaultIcons[method.icon] || method.icon} />
-                ) : (
-                  <span class="method-card__number">{index + 1}</span>
-                )}
-              </div>
-              <div class="method-card__content">
-                <h3 class="method-card__title">{method.title}</h3>
-                <p class="method-card__description">{method.description}</p>
-                <a class="method-card__link" href={method.href}>
-                  Xem chi tiết
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"></path>
-                  </svg>
-                </a>
-              </div>
-            </article>
-          </li>
-        );
-      })}
-    </ul>
+    <div class="method-cards__clover">
+      <ul class="method-cards__list">
+        {methods.map((method, index) => {
+          const accent = accentMap[method.accent || (index % 2 === 0 ? 'brand' : 'accent')];
+          return (
+            <li
+              class="method-cards__item"
+              data-reveal
+              style={`--reveal-delay: ${(index % 2) * 110}ms; --accent-color: ${accent.color}; --accent-soft: ${accent.soft};`}
+            >
+              <article class={`method-card ${cloverClass(index)} ${tintClass(index)}`}>
+                <div class="method-card__icon" aria-hidden="true">
+                  {method.illustration ? (
+                    <Image src={method.illustration} alt={method.illustrationAlt || ''} loading="lazy" />
+                  ) : method.icon ? (
+                    <div class="method-card__icon-svg" set:html={defaultIcons[method.icon] || method.icon} />
+                  ) : (
+                    <span class="method-card__number">{index + 1}</span>
+                  )}
+                </div>
+                <div class="method-card__content">
+                  <h3 class="method-card__title">{method.title}</h3>
+                  {method.description && <p class="method-card__description">{method.description}</p>}
+                  {method.href && (
+                    <span class="method-card__more">
+                      <a class="method-card__link" href={method.href} aria-label={`Xem chi tiết: ${method.title}`}>
+                        Xem chi tiết
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                          <path d="M5 12h14M12 5l7 7-7 7"></path>
+                        </svg>
+                      </a>
+                    </span>
+                  )}
+                </div>
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   </div>
 </section>
 
 <style>
+  .method-cards { padding: var(--space-12) 0; }
   .method-cards__header { margin-bottom: var(--space-10); text-align: center; }
   .method-cards__eyebrow {
     display: inline-block;
@@ -101,18 +119,19 @@ const defaultIcons: Record<string, string> = {
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--brand);
-    background: var(--brand-tint);
+    color: var(--brand-ink);
+    background: #fff;
+    border: 1px solid var(--brand-tint);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
-    margin-bottom: var(--space-3);
+    margin: 0 0 var(--space-3);
   }
   .method-cards__heading {
     font-family: var(--font-heading);
     font-size: var(--text-2xl);
     font-weight: 700;
     color: var(--brand-ink);
-    margin-bottom: var(--space-2);
+    margin: 0 0 var(--space-2);
   }
   .method-cards__subheading {
     font-size: var(--text-base);
@@ -121,46 +140,74 @@ const defaultIcons: Record<string, string> = {
     margin: 0 auto;
   }
 
+  .method-cards__clover { position: relative; }
   .method-cards__list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-6);
+    gap: var(--space-5);
   }
-  @media (min-width: 768px) { .method-cards__list { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1100px) { .method-cards__list { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 768px) {
+    .method-cards__list { grid-template-columns: repeat(2, 1fr); gap: var(--space-6); }
+    /* White dot in the middle of the clover (desktop only). */
+    .method-cards__clover::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 22px;
+      height: 22px;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 3px solid var(--brand-tint);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+  }
 
   .method-card {
-    background: var(--surface);
-    border: 1px solid var(--accent-tint);
-    border-radius: var(--radius-lg);
     padding: var(--space-6);
     display: flex;
     flex-direction: column;
     height: 100%;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+    box-shadow: 0 2px 10px rgb(59 74 0 / 0.06);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
   }
+  .method-card--green { background: var(--brand-soft); border-color: var(--brand-tint); }
+  .method-card--pink { background: var(--accent-soft); border-color: var(--accent-soft); }
   .method-card:hover {
     box-shadow: var(--shadow);
-    border-color: var(--accent-color);
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+  }
+  /* Petal shape: the corner facing the clover centre is sharpened (leaf tip). */
+  @media (min-width: 768px) {
+    .method-card--tl { border-radius: 24px 24px 8px 24px; }
+    .method-card--tr { border-radius: 24px 24px 24px 8px; }
+    .method-card--bl { border-radius: 24px 8px 24px 24px; }
+    .method-card--br { border-radius: 8px 24px 24px 24px; }
+  }
+  @media (max-width: 767px) {
+    .method-card { border-radius: 22px; }
   }
 
   .method-card__icon {
     width: 64px;
     height: 64px;
-    border-radius: var(--radius-md);
-    background: var(--accent-soft);
+    border-radius: 50%;
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: var(--space-4);
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgb(59 74 0 / 0.1);
   }
-  .method-card__icon-svg { width: 32px; height: 32px; color: var(--accent-color); }
-  .method-card__icon img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-md); }
+  .method-card__icon-svg { width: 32px; height: 32px; color: var(--accent-color); display: flex; }
+  .method-card__icon-svg :global(svg) { width: 100%; height: 100%; }
+  .method-card__icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
   .method-card__number {
     font-family: var(--font-heading);
     font-size: var(--text-2xl);
@@ -176,17 +223,20 @@ const defaultIcons: Record<string, string> = {
     color: var(--brand-ink);
     margin: 0 0 var(--space-2);
   }
+  .method-card--pink .method-card__title { color: var(--accent-ink); }
   .method-card__description {
     font-size: var(--text-base);
-    color: var(--muted);
+    color: var(--ink);
     line-height: var(--leading);
     flex: 1;
-    margin-bottom: var(--space-4);
+    margin: 0 0 var(--space-4);
   }
+  .method-card__more { margin-top: auto; }
   .method-card__link {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
+    min-height: var(--tap);
     font-family: var(--font-body);
     font-weight: 600;
     font-size: var(--text-base);
@@ -194,10 +244,11 @@ const defaultIcons: Record<string, string> = {
     text-decoration: none;
     transition: color 0.2s ease, gap 0.2s ease;
   }
-  .method-card__link:hover { color: var(--brand-ink); gap: var(--space-3); }
+  .method-card__link:hover { gap: var(--space-3); text-decoration: underline; text-underline-offset: 0.2em; }
   .method-card__link svg { width: 18px; height: 18px; flex-shrink: 0; }
 
   @media (prefers-reduced-motion: reduce) {
     .method-card, .method-card__link { transition: none; }
+    .method-card:hover { transform: none; }
   }
 </style>

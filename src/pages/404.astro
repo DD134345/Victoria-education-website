@@ -1,6 +1,27 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 ---
-<PageLayout title="Không tìm thấy trang" description="Trang bạn tìm không tồn tại hoặc đã được chuyển.">
-  <p>Trang bạn tìm không tồn tại hoặc đã được chuyển. <a href="/">Về trang chủ</a></p>
+<PageLayout title="Không tìm thấy trang" description="Trang bạn tìm không tồn tại hoặc đã được chuyển." noCrumbs tone="pink"
+  lead="Trang bạn tìm không tồn tại hoặc đã được chuyển sang địa chỉ khác.">
+  <div class="lost" data-reveal>
+    <svg class="lost__art" viewBox="0 0 200 140" aria-hidden="true" focusable="false">
+      <ellipse cx="100" cy="128" rx="70" ry="8" fill="#E3EBC4" />
+      <circle class="lost__apple" cx="100" cy="72" r="46" fill="#8E9C21" />
+      <path d="M100 30c4-12 14-18 26-16-2 12-12 18-26 16Z" fill="#536501" />
+      <circle cx="84" cy="68" r="5" fill="#1F2614" /><circle cx="116" cy="68" r="5" fill="#1F2614" />
+      <path d="M86 90c8-6 20-6 28 0" fill="none" stroke="#1F2614" stroke-width="4" stroke-linecap="round" />
+      <circle cx="74" cy="84" r="6" fill="#FF5A5A" opacity="0.6" /><circle cx="126" cy="84" r="6" fill="#FF5A5A" opacity="0.6" />
+    </svg>
+    <div class="lost__actions">
+      <a class="btn btn--green" href="/">Về trang chủ</a>
+      <a class="btn btn--outline" href="/lien-he/">Liên hệ nhà trường</a>
+    </div>
+  </div>
 </PageLayout>
+
+<style>
+  .lost { display: grid; justify-items: center; gap: var(--space-8); text-align: center; }
+  .lost__art { width: min(240px, 60vw); height: auto; }
+  .lost__apple { transform-box: fill-box; transform-origin: center bottom; animation: float 4s ease-in-out infinite; }
+  .lost__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; }
+</style>

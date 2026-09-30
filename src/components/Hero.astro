@@ -1,8 +1,10 @@
 ---
-// Hero component (WEB-07b). Calm, warm, premium. Mobile-first at 360px.
-// Uses Baloo 2 headings, Be Vietnam Pro body. Green = trust, pink = warmth/CTA.
-// Soft rounded shapes, no clip-art. WCAG AA contrast.
+// Hero component (restyle-B). ONE hero image slot (LCP) plus an animated soft
+// green/pink gradient and floating hand-drawn doodles, so the hero looks rich
+// even without a photo. CSS-first motion, disabled under prefers-reduced-motion.
 import { Image } from 'astro:assets';
+import PhotoFrame from './PhotoFrame.astro';
+import { hasPhoto } from '../lib/photos';
 
 interface Props {
   /** Main headline (max 2 lines on desktop) */
@@ -13,7 +15,7 @@ interface Props {
   primaryCta?: { label: string; href: string };
   /** Secondary CTA */
   secondaryCta?: { label: string; href: string };
-  /** Hero image (optional) */
+  /** Hero image (optional, single slot) */
   image?: ImageMetadata;
   /** Image alt text */
   imageAlt?: string;
@@ -34,35 +36,106 @@ const {
   imageAlt = '',
   eyebrow,
   variant = 'centered',
-  background = 'surface',
+  background = 'gradient',
 } = Astro.props;
+
+// Hero photo frame: src/assets/photos/home-hero.jpg. Production shows it only when the
+// file exists; `npm run dev` always shows the frame so the owner sees where it goes.
+const showPhoto = !image && (hasPhoto('home-hero') || import.meta.env.DEV);
 ---
 
-<section class="hero hero--{variant} hero--bg-{background}" aria-labelledby="hero-heading">
-  <div class="container">
-    {eyebrow && <p class="hero__eyebrow">{eyebrow}</p>}
-    <h1 id="hero-heading" class="hero__headline">{headline}</h1>
-    {subtext && <p class="hero__subtext">{subtext}</p>}
-    {(primaryCta || secondaryCta) && (
-      <div class="hero__ctas">
-        {primaryCta && <a class="hero__cta hero__cta--primary" href={primaryCta.href}>{primaryCta.label}</a>}
-        {secondaryCta && <a class="hero__cta hero__cta--secondary" href={secondaryCta.href}>{secondaryCta.label}</a>}
-      </div>
-    )}
-    {image && (
-      <div class="hero__media" aria-hidden="true">
-        <Image src={image} alt={imageAlt} loading="eager" />
-      </div>
+<section class:list={['hero', `hero--${variant}`, `hero--bg-${background}`, { 'hero--photo': showPhoto }]} aria-labelledby="hero-heading">
+  <div class="hero__bg" aria-hidden="true">
+    <svg class="hero__doodle hero__doodle--leaf" viewBox="0 0 120 120" focusable="false">
+      <path d="M20 100 C 35 55 70 30 105 25 C 100 65 70 95 20 100 Z" />
+      <path d="M20 100 C 45 80 70 55 105 25" fill="none" stroke-width="5" stroke-linecap="round" />
+    </svg>
+    <svg class="hero__doodle hero__doodle--flower" viewBox="0 0 120 120" focusable="false">
+      <circle cx="60" cy="38" r="14" />
+      <circle cx="82" cy="60" r="14" />
+      <circle cx="60" cy="82" r="14" />
+      <circle cx="38" cy="60" r="14" />
+      <circle cx="60" cy="60" r="11" class="hero__doodle-core" />
+    </svg>
+    <svg class="hero__doodle hero__doodle--cloud" viewBox="0 0 160 80" focusable="false">
+      <path d="M20 62 C 8 62 4 46 16 40 C 20 26 40 24 48 34 C 56 22 78 24 84 36 C 98 32 112 40 110 52 C 122 52 128 62 118 62 Z" />
+    </svg>
+  </div>
+  <div class="container hero__inner">
+    <div class="hero__text">
+      {eyebrow && <p class="hero__eyebrow">{eyebrow}</p>}
+      <h1 id="hero-heading" class="hero__headline">{headline}</h1>
+      {subtext && <p class="hero__subtext">{subtext}</p>}
+      {(primaryCta || secondaryCta) && (
+        <div class="hero__ctas">
+          {primaryCta && <a class="hero__cta hero__cta--primary" href={primaryCta.href}>{primaryCta.label}</a>}
+          {secondaryCta && <a class="hero__cta hero__cta--secondary" href={secondaryCta.href}>{secondaryCta.label}</a>}
+        </div>
+      )}
+      {image && (
+        <div class="hero__media">
+          <Image src={image} alt={imageAlt} loading="eager" fetchpriority="high" />
+        </div>
+      )}
+    </div>
+    {showPhoto && (
+      <PhotoFrame photoKey="home-hero" alt={`Khuôn viên ${headline}`} shape="blob" eager
+        sizes="(min-width: 900px) 460px, 86vw" class="hero__photo" />
     )}
   </div>
-  {background === 'gradient' && <div class="hero__gradient" aria-hidden="true" />}
 </section>
 
 <style>
   .hero {
-    padding: var(--space-12) 0 var(--space-16);
     position: relative;
     isolation: isolate;
+    overflow: clip;
+    padding: var(--space-12) 0 var(--space-16);
+  }
+  .hero__bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(42rem 22rem at 12% -4rem, var(--brand-tint) 0%, transparent 62%),
+      radial-gradient(40rem 22rem at 92% 8%, var(--accent-soft) 0%, transparent 60%),
+      linear-gradient(160deg, var(--brand-soft) 0%, var(--surface) 58%, var(--accent-soft) 130%);
+  }
+  /* Soft shimmer: cross-fade a second wash via opacity (transform/opacity only). */
+  .hero__bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(36rem 20rem at 70% 110%, var(--accent-soft) 0%, transparent 60%);
+    opacity: 0.55;
+  }
+  .hero--bg-surface .hero__bg { background: var(--surface); }
+  .hero--bg-brand-soft .hero__bg { background: var(--brand-soft); }
+  .hero--bg-accent-soft .hero__bg { background: var(--accent-soft); }
+  .hero--bg-surface .hero__bg::after,
+  .hero--bg-brand-soft .hero__bg::after,
+  .hero--bg-accent-soft .hero__bg::after { display: none; }
+
+  .hero__doodle {
+    position: absolute;
+    fill: var(--brand-tint);
+    stroke: var(--brand);
+    opacity: 0.5;
+  }
+  .hero__doodle--leaf { width: clamp(72px, 12vw, 128px); left: 4%; bottom: 10%; }
+  .hero__doodle--flower { width: clamp(56px, 9vw, 96px); fill: var(--accent-soft); stroke: none; right: 6%; top: 12%; }
+  .hero__doodle-core { fill: var(--accent); }
+  .hero__doodle--cloud { width: clamp(110px, 18vw, 180px); fill: #fff; stroke: none; opacity: 0.8; right: 12%; bottom: 6%; }
+
+  .hero__inner { position: relative; }
+  /* With a photo frame: text + blob photo side by side on wide screens */
+  .hero--photo .hero__inner { display: grid; gap: var(--space-10); align-items: center; }
+  .hero--photo :global(.hero__photo) { width: min(100%, 360px); justify-self: center; }
+  @media (min-width: 900px) {
+    .hero.hero--photo .hero__inner { grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr); text-align: left; }
+    .hero.hero--photo .hero__ctas { justify-content: flex-start; }
+    .hero.hero--photo .hero__headline, .hero.hero--photo .hero__subtext { margin-inline: 0; }
+    .hero--photo :global(.hero__photo) { width: min(100%, 460px); justify-self: end; }
   }
   .hero__eyebrow {
     display: inline-block;
@@ -71,27 +144,33 @@ const {
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--brand);
-    background: var(--brand-tint);
+    color: var(--brand-ink);
+    background: #fff;
+    border: 1px solid var(--brand-tint);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
-    margin-bottom: var(--space-4);
+    margin: 0 0 var(--space-4);
   }
   .hero__headline {
     font-family: var(--font-heading);
-    font-size: var(--text-3xl);
+    font-size: clamp(2rem, 1.5rem + 3.4vw, 3.5rem);
     font-weight: 700;
     line-height: var(--leading-tight);
     color: var(--brand-ink);
-    margin-bottom: var(--space-4);
+    margin: 0 0 var(--space-4);
     text-wrap: balance;
+    max-width: 20ch;
   }
+  .hero--centered .hero__headline,
+  .hero--centered .hero__subtext { margin-inline: auto; }
+  .hero--centered .hero__inner { text-align: center; }
+  .hero--centered .hero__ctas { justify-content: center; }
   .hero__subtext {
     font-size: var(--text-base);
     line-height: var(--leading);
     color: var(--muted);
-    max-width: 68ch;
-    margin-bottom: var(--space-6);
+    max-width: 60ch;
+    margin: 0 0 var(--space-6);
   }
   .hero__ctas {
     display: flex;
@@ -104,6 +183,7 @@ const {
     align-items: center;
     justify-content: center;
     min-height: var(--tap);
+    min-width: var(--tap);
     padding: var(--space-3) var(--space-6);
     border-radius: var(--radius-pill);
     font-family: var(--font-body);
@@ -111,61 +191,64 @@ const {
     font-size: var(--text-base);
     text-decoration: none;
     white-space: nowrap;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
   }
   .hero__cta:active { transform: scale(0.98); }
   .hero__cta--primary {
     background: var(--accent-strong);
     color: #fff;
+    box-shadow: 0 8px 22px rgb(201 48 58 / 0.28);
   }
-  .hero__cta--primary:hover { background: var(--accent-ink); color: #fff; }
+  .hero__cta--primary:hover { background: var(--accent-ink); color: #fff; transform: translateY(-2px); }
   .hero__cta--secondary {
-    background: transparent;
+    background: #fff;
     color: var(--brand-ink);
-    border: 2px solid var(--brand-tint);
+    border: 2px solid var(--brand);
   }
-  .hero__cta--secondary:hover { background: var(--brand-soft); border-color: var(--brand); }
+  .hero__cta--secondary:hover { background: var(--brand); color: #fff; transform: translateY(-2px); }
   .hero__media {
     margin-top: var(--space-8);
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow);
+    border: 6px solid #fff;
   }
   .hero__media img { width: 100%; height: auto; display: block; }
-  .hero__gradient {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(135deg, var(--brand-soft) 0%, var(--accent-soft) 100%);
-    opacity: 0.6;
-  }
-  .hero--bg-brand-soft { background: var(--brand-soft); }
-  .hero--bg-accent-soft { background: var(--accent-soft); }
-  .hero--bg-gradient { background: transparent; }
 
-  /* Split variant: text left, image right on desktop */
-  .hero--split .container {
+  .hero--split .hero__inner {
     display: grid;
     gap: var(--space-8);
+    text-align: left;
   }
+  .hero--split .hero__headline,
+  .hero--split .hero__subtext { margin-inline: 0; }
   .hero--split .hero__media { margin-top: 0; }
-  @media (min-width: 768px) {
-    .hero--split .container { grid-template-columns: 1fr 1fr; align-items: center; }
-    .hero--split .hero__media { order: 2; }
-  }
+  .hero--asymmetric .hero__headline { max-width: 24ch; }
 
-  /* Asymmetric variant: large headline, minimal chrome */
-  .hero--asymmetric .hero__headline { font-size: var(--text-3xl); }
-  @media (min-width: 768px) {
-    .hero--asymmetric .hero__headline { font-size: clamp(2.5rem, 2rem + 2.5vw, 3.5rem); }
-  }
-
-  /* Mobile-first: centered variant stacks naturally */
   @media (min-width: 768px) {
     .hero { padding: var(--space-16) 0 var(--space-24); }
-    .hero__headline { font-size: var(--text-3xl); }
+    .hero--split .hero__inner { grid-template-columns: 1.05fr 0.95fr; align-items: center; }
   }
-  @media (min-width: 1100px) {
-    .hero__headline { font-size: var(--text-3xl); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero__bg::after { animation: hero-shimmer 9s ease-in-out infinite alternate; }
+    .hero__doodle--leaf { animation: hero-float 8s ease-in-out infinite; }
+    .hero__doodle--flower { animation: hero-float 10s ease-in-out -2s infinite; }
+    .hero__doodle--cloud { animation: hero-drift 12s ease-in-out -4s infinite; }
+  }
+  @keyframes hero-shimmer {
+    from { opacity: 0.3; }
+    to { opacity: 0.75; }
+  }
+  @keyframes hero-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(4deg); }
+  }
+  @keyframes hero-drift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-18px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero__cta { transition: none; }
   }
 </style>

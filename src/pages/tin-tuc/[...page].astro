@@ -1,0 +1,96 @@
+---
+// Tin tức – Sự kiện (WEB-09, section 6.3): approved news, newest first, 12 per page.
+// Not generated at all while there is no approved news (hidden-until rule).
+import type { GetStaticPaths } from 'astro';
+import PageLayout from '../../layouts/PageLayout.astro';
+import NewsCard from '../../components/NewsCard.astro';
+import { getNews, entrySlug } from '../../lib/entries';
+import { site, isReal } from '../../lib/site';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const news = await getNews();
+  return news.length ? paginate(news, { pageSize: 12 }) : [];
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const title = page.currentPage === 1 ? 'Tin tức – Sự kiện' : `Tin tức – Sự kiện (trang ${page.currentPage})`;
+const fanpage = isReal(site.social?.facebook) ? site.social.facebook : '';
+const pages = Array.from({ length: page.lastPage }, (_, i) => i + 1);
+const hrefFor = (n: number) => (n === 1 ? '/tin-tuc/' : `/tin-tuc/${n}/`);
+---
+<PageLayout title={title} lead="Hoạt động, sự kiện và câu chuyện mới nhất của các bé và nhà trường.">
+  <h2 class="sr-only">Danh sách tin tức</h2>
+  <ul class="news-grid" role="list">
+    {page.data.map((entry, i) => (
+      <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+        <NewsCard
+          entry={{ data: { ...entry.data, slug: entrySlug(entry) } }}
+          variant={page.currentPage === 1 && i === 0 ? 'featured' : 'default'}
+        />
+      </li>
+    ))}
+  </ul>
+
+  {page.lastPage > 1 && (
+    <nav class="pager" aria-label="Phân trang tin tức">
+      {page.currentPage > 1 && <a class="pager__step" href={hrefFor(page.currentPage - 1)} rel="prev">← Trang trước</a>}
+      <ol class="pager__list">
+        {pages.map((n) => (
+          <li>
+            <a class="pager__num" href={hrefFor(n)} aria-current={n === page.currentPage ? 'page' : undefined}>{n}</a>
+          </li>
+        ))}
+      </ol>
+      {page.currentPage < page.lastPage && <a class="pager__step" href={hrefFor(page.currentPage + 1)} rel="next">Trang sau →</a>}
+    </nav>
+  )}
+
+  {fanpage && (
+    <p class="fanpage" data-reveal>
+      <a class="btn btn--outline" href={fanpage} rel="noopener">Xem thêm trên Fanpage</a>
+    </p>
+  )}
+</PageLayout>
+
+<style>
+  .news-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 700px) { .news-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) {
+    .news-grid { grid-template-columns: repeat(3, 1fr); }
+    .news-grid > li:first-child { grid-column: span 2; }
+  }
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-top: var(--space-12);
+  }
+  .pager__list { display: flex; gap: var(--space-2); list-style: none; margin: 0; padding: 0; }
+  .pager__num, .pager__step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap);
+    min-height: var(--tap);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--brand-tint);
+    background: #fff;
+    color: var(--brand-ink);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .pager__num:hover, .pager__step:hover { border-color: var(--brand); color: var(--brand); }
+  .pager__num[aria-current='page'] { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .fanpage { margin-top: var(--space-10); text-align: center; max-width: none; }
+</style>

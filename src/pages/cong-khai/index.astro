@@ -1,11 +1,75 @@
 ---
-// Always generated: legal presence matters (TT 09/2024). Full layout in WEB-11 (section 6.8).
+// Công khai (WEB-11, section 6.8): always generated. One card per group with its
+// item count and newest update; groups with nothing yet say "Đang cập nhật".
 import PageLayout from '../../layouts/PageLayout.astro';
-import { DISCLOSURE_GROUPS } from '../../lib/nav';
+import { DISCLOSURE_GROUPS, isVisible } from '../../lib/nav';
+import { getCurrentDisclosures, latestUpdate } from '../../lib/disclosure';
+
+const all = await getCurrentDisclosures();
+const cards = DISCLOSURE_GROUPS.map((g) => {
+  const items = all.filter((d) => d.data.group === g.slug);
+  return { ...g, count: items.length, updated: latestUpdate(items) };
+});
+const extra = [];
+if (await isVisible('/giao-duc-tuyen-sinh/thuc-don/')) extra.push({ href: '/giao-duc-tuyen-sinh/thuc-don/', label: 'Thực đơn tuần' });
+if (await isVisible('/giao-duc-tuyen-sinh/ke-hoach/')) extra.push({ href: '/giao-duc-tuyen-sinh/ke-hoach/', label: 'Kế hoạch giáo dục tháng/tuần' });
 ---
-<PageLayout title="Công khai" description="Thông tin công khai theo Thông tư 09/2024/TT-BGDĐT.">
-  <ul>
-    {DISCLOSURE_GROUPS.map((g) => <li><a href={`/cong-khai/${g.slug}/`}>{g.label}</a></li>)}
-    <li><a href="/cong-khai/luu-tru/">Lưu trữ</a></li>
+<PageLayout title="Công khai" description="Thông tin công khai của nhà trường theo Thông tư 09/2024/TT-BGDĐT."
+  lead="Thông tin công khai theo Thông tư 09/2024/TT-BGDĐT, ghi rõ ngày công khai và ngày cập nhật.">
+  <ul class="groups" role="list">
+    {cards.map((c, i) => (
+      <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+        <a class="group" href={`/cong-khai/${c.slug}/`}>
+          <span class="group__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <span class="group__label">{c.label}</span>
+          <span class:list={['group__status', { 'group__status--empty': c.count === 0 }]}>
+            {c.count > 0 ? `${c.count} mục · cập nhật ${c.updated}` : 'Đang cập nhật'}
+          </span>
+        </a>
+      </li>
+    ))}
   </ul>
+
+  <div class="more">
+    {extra.length > 0 && (
+      <section aria-labelledby="ck-lien-quan">
+        <h2 id="ck-lien-quan">Thông tin định kỳ</h2>
+        <ul class="links" role="list">
+          {extra.map((e) => <li><a href={e.href}>{e.label}</a></li>)}
+        </ul>
+      </section>
+    )}
+    <p><a class="btn btn--outline" href="/cong-khai/luu-tru/">Lưu trữ công khai (các năm trước)</a></p>
+  </div>
 </PageLayout>
+
+<style>
+  .groups { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); }
+  @media (min-width: 700px) { .groups { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .groups { grid-template-columns: repeat(3, 1fr); } }
+  .group {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    height: 100%;
+    padding: var(--space-6) var(--space-5) var(--space-5);
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+    border-left: 6px solid var(--brand);
+    color: var(--brand-ink);
+    text-decoration: none;
+    box-shadow: 0 2px 10px rgb(59 74 0 / 0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .group:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--brand); }
+  .group__num { font-family: var(--font-heading); font-size: var(--text-2xl); font-weight: 700; color: var(--apple); line-height: 1; }
+  .group__label { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: 700; line-height: 1.25; }
+  .group__status { margin-top: auto; font-size: var(--text-sm); font-weight: 600; color: var(--brand); }
+  .group__status--empty { color: var(--accent-ink); }
+  .more { margin-top: var(--space-12); display: grid; gap: var(--space-6); }
+  .more h2 { font-size: var(--text-xl); }
+  .links { margin: 0; padding-left: var(--space-5); }
+  .links a { display: inline-flex; align-items: center; min-height: var(--tap); font-weight: 600; }
+</style>

@@ -1,9 +1,50 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Chính sách học phí (WEB-09): current school year's fee table (HTML <table>,
+// vi-VN numbers), links to the regulation pages and to past years.
 import PageLayout from '../../layouts/PageLayout.astro';
-import { onlyIf } from '../../lib/nav';
+import FeeTable from '../../components/FeeTable.astro';
+import { onlyIf, isVisible } from '../../lib/nav';
+import { getFees, feeTableProps } from '../../lib/fees';
 export const getStaticPaths = () => onlyIf('/chinh-sach-hoc-phi/');
+
+const [current, ...past] = await getFees();
+const pastYears = past.map((f) => ({ label: `Năm học ${f.data.school_year}`, href: `/chinh-sach-hoc-phi/${f.data.school_year}/` }));
+const rules = [
+  { href: '/chinh-sach-hoc-phi/quy-dinh-nha-truong/', label: 'Quy định nhà trường' },
+  { href: '/chinh-sach-hoc-phi/quy-dinh-tai-chinh/', label: 'Quy định tài chính' },
+];
+const ruleLinks = [];
+for (const r of rules) if (await isVisible(r.href)) ruleLinks.push(r);
 ---
-<PageLayout title="Chính sách học phí">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Chính sách học phí" lead="Học phí và các khoản thu được công bố rõ ràng theo từng năm học.">
+  <div data-reveal>
+    <FeeTable {...feeTableProps(current)} pastYears={pastYears.length ? pastYears : undefined} />
+  </div>
+  {ruleLinks.length > 0 && (
+    <ul class="rule-links" role="list">
+      {ruleLinks.map((r, i) => (
+        <li data-reveal style={`--reveal-delay: ${i * 90}ms;`}><a href={r.href}>{r.label} <span aria-hidden="true">→</span></a></li>
+      ))}
+    </ul>
+  )}
 </PageLayout>
+
+<style>
+  .rule-links { list-style: none; padding: 0; margin: var(--space-10) 0 0; display: grid; gap: var(--space-4); }
+  @media (min-width: 700px) { .rule-links { grid-template-columns: 1fr 1fr; } }
+  .rule-links a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: var(--tap);
+    padding: var(--space-4) var(--space-5);
+    border-radius: 18px;
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-tint);
+    color: var(--brand-ink);
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .rule-links a:hover { transform: translateY(-2px); border-color: var(--brand); }
+</style>

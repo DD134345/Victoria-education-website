@@ -1,17 +1,52 @@
 ---
+// One notice (WEB-09): posting date, validity and status always visible.
 import { render } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
+import Prose from '../../components/Prose.astro';
 import { getPublished } from '../../lib/published';
-import { slug } from '../../lib/slug';
+import { entrySlug, todayVn } from '../../lib/entries';
+import { formatVnDate } from '../../lib/dates';
 
 export async function getStaticPaths() {
   return (await getPublished('notices')).map((entry) => ({
-    params: { slug: slug(entry.data.title) || entry.id }, props: { entry },
+    params: { slug: entrySlug(entry) }, props: { entry },
   }));
 }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+const d = entry.data;
+const valid = !d.valid_until || d.valid_until >= todayVn();
 ---
-<PageLayout title={entry.data.title} description={entry.data.summary}>
-  <Content />
+<PageLayout title={d.title} description={d.summary} eyebrow="Thông báo" tone="pink" narrow>
+  <dl class="notice-meta">
+    <div><dt>Ngày đăng</dt><dd><time datetime={d.date.toISOString()}>{formatVnDate(d.date)}</time></dd></div>
+    {d.valid_until && (
+      <div><dt>Hiệu lực đến</dt><dd><time datetime={d.valid_until.toISOString()}>{formatVnDate(d.valid_until)}</time></dd></div>
+    )}
+    <div><dt>Trạng thái</dt><dd class:list={['status', valid ? 'status--ok' : 'status--old']}>{valid ? 'Còn hiệu lực' : 'Đã hết hạn'}</dd></div>
+  </dl>
+  {d.summary && <p class="notice-summary">{d.summary}</p>}
+  <Prose><Content /></Prose>
+  <p class="back"><a class="btn btn--outline" href="/thong-bao/">← Tất cả thông báo</a></p>
 </PageLayout>
+
+<style>
+  .notice-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-6);
+  }
+  .notice-meta > div {
+    padding: var(--space-3) var(--space-4);
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+  }
+  .notice-meta dt { font-size: var(--text-sm); color: var(--muted); }
+  .notice-meta dd { margin: 0; font-weight: 700; color: var(--brand-ink); }
+  .status--ok { color: var(--brand) !important; }
+  .status--old { color: var(--accent-ink) !important; }
+  .notice-summary { font-size: var(--text-lg); color: var(--brand-ink); font-weight: 500; }
+  .back { margin-top: var(--space-10); }
+</style>

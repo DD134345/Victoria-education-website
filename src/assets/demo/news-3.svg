@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Ảnh minh hoạ">
+  <title>Ảnh minh hoạ</title>
+  <defs>
+    <linearGradient id="demoNews3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3f6e4"/>
+      <stop offset="1" stop-color="#ffedec"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#demoNews3)"/>
+  <ellipse cx="400" cy="300" rx="260" ry="170" fill="#536501" opacity="0.1"/>
+  <circle cx="120" cy="140" r="70" fill="#8e9c21" opacity="0.3"/>
+  <circle cx="690" cy="150" r="55" fill="#ff5a5a" opacity="0.25"/>
+  <g fill="none" stroke="#536501" stroke-width="6" stroke-linecap="round" opacity="0.55">
+    <circle cx="400" cy="470" r="26"/>
+    <path d="M400 444 L400 400 M400 400 C 380 380 360 378 345 385 M400 400 C 420 380 440 378 455 385"/>
+  </g>
+  <text x="400" y="312" text-anchor="middle" font-family="sans-serif" font-size="46" font-weight="700" fill="#3b4a00">Ảnh minh hoạ</text>
+</svg>

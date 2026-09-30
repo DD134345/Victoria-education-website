@@ -19,7 +19,10 @@ let failures = 0;
 const dataDirs = ['src/content', 'src/data'].map((d) => join(root, d)).filter(existsSync);
 const anyApproved = dataDirs.flatMap(walk)
   .filter((f) => /\.(md|json)$/.test(f) && !f.includes('__'))
-  .some((f) => /approved"?\s*:\s*true/.test(readFileSync(f, 'utf8')));
+  .some((f) => /approved"?\s*:\s*true/.test(readFileSync(f, 'utf8')))
+  // Owner-added facility photos also count as data (they open /thu-vien/).
+  || (existsSync(join(root, 'src/assets/photos/co-so-vat-chat'))
+    && readdirSync(join(root, 'src/assets/photos/co-so-vat-chat')).some((f) => /\.(jpe?g|png|webp|avif)$/i.test(f)));
 
 if (!anyApproved) {
   const allowed = (p) => p === 'index.html' || p === '404.html' || p === 'lien-he/index.html'

@@ -1,17 +1,76 @@
 ---
+// One news article (WEB-09). Cover only when photo consent was checked (schema refine).
 import { render } from 'astro:content';
+import { Image } from 'astro:assets';
 import PageLayout from '../../layouts/PageLayout.astro';
-import { getPublished } from '../../lib/published';
-import { slug } from '../../lib/slug';
+import Prose from '../../components/Prose.astro';
+import { getNews, entrySlug, NEWS_CATEGORIES } from '../../lib/entries';
+import { formatVnDate } from '../../lib/dates';
 
 export async function getStaticPaths() {
-  return (await getPublished('news')).map((entry) => ({
-    params: { slug: slug(entry.data.title) || entry.id }, props: { entry },
+  const news = await getNews();
+  return news.map((entry, i) => ({
+    params: { slug: entrySlug(entry) },
+    props: { entry, newer: news[i - 1], older: news[i + 1] },
   }));
 }
-const { entry } = Astro.props;
+const { entry, newer, older } = Astro.props;
 const { Content } = await render(entry);
+const d = entry.data;
 ---
-<PageLayout title={entry.data.title} description={entry.data.summary}>
-  <Content />
+<PageLayout title={d.title} description={d.summary} eyebrow={NEWS_CATEGORIES[d.category]} narrow>
+  <article class="article">
+    <p class="article__meta">
+      <time datetime={d.date.toISOString()}>Ngày đăng: {formatVnDate(d.date)}</time>
+    </p>
+    {d.summary && <p class="article__summary">{d.summary}</p>}
+    {d.cover && (
+      <Image class="article__cover" src={d.cover} alt={d.cover_alt ?? ''} widths={[480, 800, 1200]}
+        sizes="(min-width: 50rem) 50rem, 100vw" loading="eager" fetchpriority="high" />
+    )}
+    <Prose><Content /></Prose>
+    {d.fb_url && (
+      <p class="article__source"><a href={d.fb_url} rel="noopener">Xem bài gốc trên Fanpage</a></p>
+    )}
+  </article>
+
+  <nav class="article-nav" aria-label="Bài viết khác">
+    {newer && <a class="article-nav__link" href={`/tin-tuc/${entrySlug(newer)}/`} rel="prev"><span>Bài mới hơn</span>{newer.data.title}</a>}
+    {older && <a class="article-nav__link article-nav__link--older" href={`/tin-tuc/${entrySlug(older)}/`} rel="next"><span>Bài trước đó</span>{older.data.title}</a>}
+  </nav>
+  <p><a class="btn btn--outline" href="/tin-tuc/">← Tất cả tin tức</a></p>
 </PageLayout>
+
+<style>
+  .article__meta { color: var(--muted); font-size: var(--text-sm); margin-bottom: var(--space-3); }
+  .article__summary { font-size: var(--text-lg); color: var(--brand-ink); font-weight: 500; }
+  .article :global(.article__cover) {
+    width: 100%;
+    border-radius: 22px;
+    margin: var(--space-6) 0;
+    box-shadow: var(--shadow);
+  }
+  .article__source { margin-top: var(--space-8); }
+  .article-nav {
+    display: grid;
+    gap: var(--space-4);
+    margin: var(--space-12) 0 var(--space-8);
+  }
+  @media (min-width: 700px) { .article-nav { grid-template-columns: 1fr 1fr; } }
+  .article-nav__link {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--brand-tint);
+    border-radius: 18px;
+    background: #fff;
+    color: var(--brand-ink);
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .article-nav__link span { font-size: var(--text-sm); font-weight: 500; color: var(--muted); }
+  .article-nav__link--older { text-align: right; }
+  .article-nav__link:hover { border-color: var(--brand); box-shadow: var(--shadow); transform: translateY(-2px); }
+</style>

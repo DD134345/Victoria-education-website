@@ -1,9 +1,22 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Giáo viên của bé (WEB-09). Approved rows only, ordered by `order`; photos only with photo_consent.
 import PageLayout from '../../../layouts/PageLayout.astro';
+import TeacherCard from '../../../components/TeacherCard.astro';
 import { onlyIf } from '../../../lib/nav';
+import { getPublished } from '../../../lib/published';
 export const getStaticPaths = () => onlyIf('/gioi-thieu/giao-vien/');
+
+const people = (await getPublished('teachers')).map((p) => p.data).sort((a, b) => a.order - b.order);
 ---
-<PageLayout title="Giáo viên của bé">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Giáo viên của bé" eyebrow="Giới thiệu" lead="Những thầy cô đồng hành cùng bé mỗi ngày.">
+  <h2 class="sr-only">Danh sách giáo viên</h2>
+  <ul class="people" role="list">
+    {people.map((p, i) => (
+      <li data-reveal style={`--reveal-delay: ${(i % 4) * 80}ms;`}><TeacherCard teacher={p} /></li>
+    ))}
+  </ul>
 </PageLayout>
+
+<style>
+  .people { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
+</style>

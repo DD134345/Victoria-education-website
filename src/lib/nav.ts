@@ -3,6 +3,7 @@
 // and the nav omits it automatically.
 import { getPublished } from './published';
 import siteConfig from '../data/site-config.json';
+import { photosIn } from './photos';
 
 export const DISCLOSURE_GROUPS = [
   { slug: 'thong-tin-chung', label: 'Thông tin chung' },
@@ -42,6 +43,8 @@ export function visibleRoutes(): Promise<Record<string, boolean>> {
     const classes = Object.values(classesFiles)[0] as { default?: unknown } | undefined;
     const classesReal = !!classes && !JSON.stringify(classes).includes('TODO-OWNER');
     const formUrl = (siteConfig as Record<string, unknown>).admissionsFormUrl;
+    // Owner-added facility photos (src/assets/photos/co-so-vat-chat/) also open the library.
+    const facilityPhotos = photosIn('co-so-vat-chat').length > 0;
 
     const v: Record<string, boolean> = {
       '/': true,
@@ -55,8 +58,8 @@ export function visibleRoutes(): Promise<Record<string, boolean>> {
       '/giao-duc-tuyen-sinh/ke-hoach/': plans.length >= 1,
       '/chinh-sach-hoc-phi/': fees.length >= 1,
       '/tin-tuc/': news.length >= 1,
-      '/thu-vien/': albums.length >= 1,
-      '/thu-vien/co-so-vat-chat/': albums.some((a) => a.data.category === 'co-so-vat-chat'),
+      '/thu-vien/': albums.length >= 1 || facilityPhotos,
+      '/thu-vien/co-so-vat-chat/': albums.some((a) => a.data.category === 'co-so-vat-chat') || facilityPhotos,
       '/thu-vien/hinh-anh-cac-be/': albums.some((a) => a.data.category === 'hinh-anh-cac-be'),
       '/thong-bao/': notices.length >= 1,
     };
@@ -117,5 +120,29 @@ export async function buildNav(): Promise<NavItem[]> {
     if (v[item.href]) out.push({ ...item, children: kids.length ? kids : undefined });
     else if (kids.length) out.push({ label: item.label, href: kids[0].href, children: kids });
   }
+  return out;
+}
+
+/** Human label for a known route ("/tin-tuc/" -> "Tin tức – Sự kiện"), or undefined. */
+export function labelFor(href: string): string | undefined {
+  for (const item of TREE) {
+    if (item.href === href) return item.label;
+    const kid = item.children?.find((c) => c.href === href);
+    if (kid) return kid.label;
+  }
+  return undefined;
+}
+
+/** Breadcrumb trail for a path: Trang chủ + every ancestor that has a known label. */
+export function crumbsFor(pathname: string, current: string): { label: string; href: string }[] {
+  const parts = pathname.split('/').filter(Boolean);
+  const out = [{ label: 'Trang chủ', href: '/' }];
+  let path = '/';
+  parts.forEach((seg, i) => {
+    path += `${seg}/`;
+    const last = i === parts.length - 1;
+    const label = last ? current : labelFor(path);
+    if (label) out.push({ label, href: path });
+  });
   return out;
 }

@@ -1,0 +1,28 @@
+---
+// AlbumList (WEB-09): every approved album of an optional category, newest
+// first, each rendered as a Gallery (h2 heading, keyboard lightbox). Child
+// photos only exist here if the schema's consent_register_ref check passed.
+import Gallery from './Gallery.astro';
+import { getPublished } from '../lib/published';
+
+interface Props { category?: 'co-so-vat-chat' | 'hinh-anh-cac-be' }
+const { category } = Astro.props;
+const albums = (await getPublished('albums'))
+  .filter((a) => !category || a.data.category === category)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+<div class="album-list">
+  {albums.map((a) => (
+    <Gallery
+      title={a.data.title}
+      date={a.data.date}
+      category={a.data.category}
+      images={a.data.photos}
+      consentRegisterRef={a.data.consent_register_ref}
+    />
+  ))}
+</div>
+
+<style>
+  .album-list { display: grid; gap: var(--space-16); }
+</style>

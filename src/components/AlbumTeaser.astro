@@ -1,10 +1,24 @@
 ---
-// AlbumTeaser component (WEB-07b). For homepage "Thư viện ảnh" section (§6.6 #11).
-// Shows 3 latest albums. Hidden until ≥ 1 album.
-// Links to album detail pages. Lazy images, keyboard lightbox (handled by Gallery component).
+// AlbumTeaser component (restyle-B). Homepage "Thư viện ảnh": one large
+// rounded image with round prev/next buttons and a thumbnail strip below
+// (CSS scroll-snap, no library). Shows the newest album's photos; hidden when
+// there are no albums (dev preview can pass demoItems instead).
 import { Image } from 'astro:assets';
 import { getPublished } from '../lib/published';
-import EmptyState from './EmptyState.astro';
+
+interface DemoPhoto {
+  src: ImageMetadata;
+  alt: string;
+}
+
+interface DemoAlbumItem {
+  title: string;
+  dateLabel: string;
+  categoryLabel: string;
+  photos: DemoPhoto[];
+  /** Detail link. Pass null for non-linking dev preview cards. */
+  href?: string | null;
+}
 
 interface Props {
   /** Maximum albums to show */
@@ -17,12 +31,14 @@ interface Props {
   viewAllHref?: string;
   /** View all label */
   viewAllLabel?: string;
+  /** Dev-preview album (used only when the collection is empty) */
+  demoItems?: DemoAlbumItem[];
 }
 
-const { limit = 3, category, heading, viewAllHref = '/thu-vien/', viewAllLabel = 'Xem tất cả' } = Astro.props;
+const { limit = 3, category, heading, viewAllHref = '/thu-vien/', viewAllLabel = 'Xem tất cả', demoItems = [] } = Astro.props;
 
 const albums = (await getPublished('albums'))
-  .filter(a => !category || a.data.category === category)
+  .filter((a) => !category || a.data.category === category)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, limit);
 
@@ -30,61 +46,240 @@ const categoryLabels = {
   'co-so-vat-chat': 'Cơ sở vật chất',
   'hinh-anh-cac-be': 'Hình ảnh các bé',
 };
+
+interface ViewerPhoto {
+  src: ImageMetadata;
+  alt: string;
+}
+interface ViewerAlbum {
+  title: string;
+  meta: string;
+  badge: string;
+  href: string | null;
+  photos: ViewerPhoto[];
+}
+
+const realViewers: ViewerAlbum[] = albums.map((album) => {
+  // There are no per-album pages: link to the album's category page, which is
+  // always generated when an approved album exists in it (lib/nav.ts).
+  return {
+    title: album.data.title,
+    meta: album.data.date.toLocaleDateString('vi-VN'),
+    badge: categoryLabels[album.data.category],
+    href: `/thu-vien/${album.data.category}/`,
+    photos: album.data.photos.map((p) => ({ src: p.src, alt: p.alt })),
+  };
+});
+
+const demoViewers: ViewerAlbum[] = demoItems.map((d) => ({
+  title: d.title,
+  meta: d.dateLabel,
+  badge: d.categoryLabel,
+  href: d.href === undefined ? null : d.href,
+  photos: d.photos,
+}));
+
+const viewers = realViewers.length > 0 ? realViewers : demoViewers;
+const viewer = viewers[0];
+const viewerId = `album-viewer-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
-<section class="album-teaser" aria-labelledby={heading ? 'album-teaser-heading' : undefined}>
-  <div class="container">
-    {(heading || viewAllHref) && (
-      <header class="album-teaser__header">
-        {heading && <h2 id="album-teaser-heading" class="album-teaser__heading">{heading}</h2>}
-        {viewAllHref && albums.length > 0 && (
-          <a class="album-teaser__view-all" href={viewAllHref}>
-            {viewAllLabel}
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7"></path>
-            </svg>
-          </a>
-        )}
-      </header>
-    )}
+{viewer ? (
+  <section class="album-teaser" aria-labelledby={heading ? 'album-teaser-heading' : 'album-teaser-title'} data-reveal>
+    <div class="container">
+      {(heading || viewAllHref) && (
+        <header class="album-teaser__header">
+          {heading && <h2 id="album-teaser-heading" class="album-teaser__heading">{heading}</h2>}
+          {viewAllHref && realViewers.length > 0 && (
+            <a class="album-teaser__view-all" href={viewAllHref}>
+              {viewAllLabel}
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                <path d="M5 12h14M12 5l7 7-7 7"></path>
+              </svg>
+            </a>
+          )}
+        </header>
+      )}
 
-    {albums.length > 0 ? (
-      <ul class="album-teaser__grid">
-        {albums.map(album => {
-          // Astro collection entries have `slug` property (from filename)
-          const slug = (album as { slug?: string }).slug ?? album.id.replace(/\.md$/, '');
-          return (
-            <li class="album-teaser__item">
-              <article class="album-card">
-                <a class="album-card__link" href={`/thu-vien/${slug}/`} aria-label={`Xem album: ${album.data.title}`}>
-                  <div class="album-card__cover">
-                    {album.data.photos[0] && (
-                      <Image src={album.data.photos[0].src} alt={album.data.photos[0].alt} loading="lazy" />
-                    )}
-                    <span class="album-card__count">{album.data.photos.length} ảnh</span>
-                    <span class={`album-card__category album-card__category--${album.data.category}`}>
-                      {categoryLabels[album.data.category]}
-                    </span>
-                  </div>
-                  <div class="album-card__info">
-                    <h3 class="album-card__title">{album.data.title}</h3>
-                    <time class="album-card__date" datetime={album.data.date.toISOString()}>
-                      {album.data.date.toLocaleDateString('vi-VN')}
-                    </time>
-                  </div>
-                </a>
-              </article>
-            </li>
-          );
-        })}
-      </ul>
-    ) : (
-      <EmptyState reason="no-data" section="Thư viện ảnh" message="Chưa có album ảnh nào." />
-    )}
-  </div>
-</section>
+      <div class="album-viewer" id={viewerId}>
+        <div class="album-viewer__main">
+          {viewer.href ? (
+            <a href={viewer.href} aria-label={`Xem album: ${viewer.title}`}>
+              <Image src={viewer.photos[0].src} alt={viewer.photos[0].alt} loading="lazy" class="album-viewer__img" />
+            </a>
+          ) : (
+            <Image src={viewer.photos[0].src} alt={viewer.photos[0].alt} loading="lazy" class="album-viewer__img" />
+          )}
+          <span class="album-viewer__badge">{viewer.badge}</span>
+          {viewer.photos.length > 1 && (
+            <>
+              <button type="button" class="album-viewer__nav album-viewer__nav--prev" data-prev aria-label="Ảnh trước">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="22" height="22">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <button type="button" class="album-viewer__nav album-viewer__nav--next" data-next aria-label="Ảnh sau">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="22" height="22">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+        <div class="album-viewer__info">
+          <h3 id="album-teaser-title" class="album-viewer__title">
+            {viewer.href ? <a href={viewer.href}>{viewer.title}</a> : <span>{viewer.title}</span>}
+          </h3>
+          <p class="album-viewer__meta">{viewer.meta} · {viewer.photos.length} ảnh</p>
+        </div>
+        {viewer.photos.length > 1 && (
+          <div class="album-viewer__thumbs" role="group" aria-label="Chọn ảnh trong album">
+            {viewer.photos.map((photo, i) => (
+              <button
+                type="button"
+                class={`album-viewer__thumb${i === 0 ? ' album-viewer__thumb--active' : ''}`}
+                data-thumb={i}
+                aria-label={`Xem ảnh ${i + 1}: ${photo.alt}`}
+                aria-pressed={i === 0 ? 'true' : 'false'}
+              >
+                <Image src={photo.src} alt="" loading="lazy" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+) : null}
+
+<script is:inline define:vars={{ viewerId }}>
+  // Prev/next + thumbnail swap with crossfade (progressive enhancement; first photo shows without JS).
+  (function () {
+    var root = document.getElementById(viewerId);
+    if (!root) return;
+    var main = root.querySelector('.album-viewer__img');
+    var thumbs = Array.prototype.slice.call(root.querySelectorAll('[data-thumb]'));
+    var strip = root.querySelector('.album-viewer__thumbs');
+    if (!main || thumbs.length < 2) return;
+    var index = 0;
+    var seq = 0;
+    var currentOverlay = null;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function centerThumb(btn) {
+      if (!strip) return;
+      var left = btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2;
+      try {
+        strip.scrollTo({ left: Math.max(0, left), behavior: reduce ? 'auto' : 'smooth' });
+      } catch (e) {
+        strip.scrollLeft = Math.max(0, left);
+      }
+    }
+
+    function removeOverlay() {
+      if (currentOverlay && currentOverlay.parentNode) {
+        currentOverlay.parentNode.removeChild(currentOverlay);
+      }
+      currentOverlay = null;
+    }
+
+    function show(i) {
+      index = (i + thumbs.length) % thumbs.length;
+      var thumbBtn = thumbs[index];
+      var img = thumbBtn.querySelector('img');
+      var nextSrc = img ? (img.currentSrc || img.src) : main.src;
+      var ariaLabel = thumbBtn.getAttribute('aria-label') || '';
+      var nextAlt = ariaLabel.indexOf(': ') !== -1 ? ariaLabel.substring(ariaLabel.indexOf(': ') + 2) : (img ? (img.alt || main.alt) : main.alt);
+
+      // Update thumb active state immediately
+      thumbs.forEach(function (b, j) {
+        b.classList.toggle('album-viewer__thumb--active', j === index);
+        b.setAttribute('aria-pressed', j === index ? 'true' : 'false');
+      });
+      centerThumb(thumbBtn);
+
+      var token = ++seq;
+      var pre = new Image();
+      pre.src = nextSrc;
+      var go = function () {
+        if (token !== seq) return;
+        // Find the container for overlay (the <a> if present, else .album-viewer__main)
+        var mainContainer = main.parentNode;
+        // Remove any existing overlay
+        removeOverlay();
+        // Create overlay
+        var overlay = document.createElement('img');
+        overlay.className = 'album-viewer__img album-viewer__fade';
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.alt = '';
+        overlay.src = nextSrc;
+        mainContainer.appendChild(overlay);
+        // Force reflow
+        overlay.offsetWidth;
+        // Start fade in
+        overlay.classList.add('is-in');
+        currentOverlay = overlay;
+        // Wait for transition end
+        var finished = false;
+        var finish = function () {
+          if (finished) return;
+          finished = true;
+          if (token !== seq) {
+            removeOverlay();
+            return;
+          }
+          main.src = nextSrc;
+          main.alt = nextAlt;
+          if (main.hasAttribute('srcset')) main.removeAttribute('srcset');
+          if (main.hasAttribute('sizes')) main.removeAttribute('sizes');
+          removeOverlay();
+        };
+        overlay.addEventListener('transitionend', function (e) {
+          if (e.propertyName === 'opacity') finish();
+        });
+        setTimeout(finish, 400);
+      };
+      if (pre.decode) {
+        pre.decode().then(go, go);
+      } else {
+        pre.onload = go;
+        pre.onerror = go;
+      }
+    }
+
+    thumbs.forEach(function (btn, i) {
+      btn.addEventListener('click', function () { show(i); });
+    });
+    var prev = root.querySelector('[data-prev]');
+    var next = root.querySelector('[data-next]');
+    if (prev) prev.addEventListener('click', function () { show(index - 1); });
+    if (next) next.addEventListener('click', function () { show(index + 1); });
+
+    // Keyboard navigation
+    root.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); show(index - 1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); show(index + 1); }
+    });
+
+    // Touch swipe on main image
+    var startX = 0;
+    var startY = 0;
+    main.addEventListener('touchstart', function (e) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    main.addEventListener('touchend', function (e) {
+      var dx = e.changedTouches[0].clientX - startX;
+      var dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        show(index + (dx < 0 ? 1 : -1));
+      }
+    }, { passive: true });
+  })();
+</script>
 
 <style>
+  .album-teaser { padding: var(--space-12) 0; }
   .album-teaser__header {
     display: flex;
     justify-content: space-between;
@@ -104,6 +299,7 @@ const categoryLabels = {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
+    min-height: var(--tap);
     font-family: var(--font-body);
     font-weight: 600;
     font-size: var(--text-base);
@@ -114,84 +310,116 @@ const categoryLabels = {
   .album-teaser__view-all:hover { color: var(--brand-ink); gap: var(--space-3); }
   .album-teaser__view-all svg { width: 18px; height: 18px; }
 
-  .album-teaser__grid {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-4);
-  }
-  @media (min-width: 600px) { .album-teaser__grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 900px) { .album-teaser__grid { grid-template-columns: repeat(3, 1fr); } }
-
-  .album-card {
-    background: var(--surface);
-    border: 1px solid var(--brand-tint);
+  .album-viewer { max-width: 56rem; margin: 0 auto; }
+  .album-viewer__main {
+    position: relative;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-  }
-  .album-card:hover {
+    border: 6px solid #fff;
     box-shadow: var(--shadow);
-    border-color: var(--brand);
-    transform: translateY(-2px);
+    background: var(--brand-soft);
   }
-
-  .album-card__link { display: block; text-decoration: none; }
-  .album-card__cover {
-    position: relative;
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
+  .album-viewer__main a { display: block; }
+  .album-viewer__main a:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  .album-viewer__img { width: 100%; height: auto; display: block; aspect-ratio: 16 / 10; object-fit: cover; }
+  .album-viewer__main a { display: block; position: relative; }
+  /* The fade overlay is created by the script, so it has no scoped-style attribute:
+     these rules must be :global() or they never apply (it would stack as a normal
+     image on top of the arrows and swallow clicks). */
+  .album-viewer__main :global(.album-viewer__fade) {
+    position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; aspect-ratio: auto;
+    object-fit: cover; opacity: 0; transition: opacity .35s ease; pointer-events: none;
   }
-  .album-card__cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.4s ease;
-  }
-  .album-card:hover .album-card__cover img { transform: scale(1.03); }
-
-  .album-card__count {
+  .album-viewer__main :global(.album-viewer__fade.is-in) { opacity: 1; }
+  .album-viewer__badge {
     position: absolute;
-    top: var(--space-2);
-    left: var(--space-2);
-    background: rgba(31, 38, 20, 0.8);
-    color: #fff;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-pill);
-    backdrop-filter: blur(4px);
-  }
-  .album-card__category {
-    position: absolute;
-    bottom: var(--space-2);
-    left: var(--space-2);
+    top: var(--space-3);
+    left: var(--space-3);
     font-family: var(--font-body);
     font-size: var(--text-sm);
     font-weight: 600;
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
     color: #fff;
+    background: var(--brand);
+    white-space: nowrap;
+    z-index: 2;
   }
-  .album-card__category--co-so-vat-chat { background: var(--brand); }
-  .album-card__category--hinh-anh-cac-be { background: var(--accent-strong); }
+  .album-viewer__nav {
+    position: absolute;
+    top: calc(50% - var(--tap) / 2);
+    width: var(--tap);
+    height: var(--tap);
+    background: #fff;
+    border: 2px solid var(--brand-tint);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--brand-ink);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .18s cubic-bezier(.2,.8,.2,1);
+    will-change: transform;
+    z-index: 2; /* always above the photo and its fade overlay */
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .album-viewer__nav:hover { background: var(--brand); border-color: var(--brand); color: #fff; transform: scale(1.06); box-shadow: 0 10px 24px rgb(59 74 0 / .22); }
+    .album-viewer__nav--prev:hover svg { transform: translateX(-2px); }
+    .album-viewer__nav--next:hover svg { transform: translateX(2px); }
+  }
+  .album-viewer__nav svg { transition: transform .2s cubic-bezier(.2,.8,.2,1); }
+  .album-viewer__nav:active { transform: scale(.92); transition-duration: .08s; }
+  .album-viewer__nav:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .album-viewer__nav--prev { left: var(--space-3); }
+  .album-viewer__nav--next { right: var(--space-3); }
 
-  .album-card__info { padding: var(--space-4); }
-  .album-card__title {
+  .album-viewer__info { text-align: center; margin-top: var(--space-4); }
+  .album-viewer__title {
     font-family: var(--font-heading);
     font-size: var(--text-lg);
     font-weight: 700;
-    color: var(--brand-ink);
     margin: 0 0 var(--space-1);
   }
-  .album-card__date {
-    font-size: var(--text-sm);
-    color: var(--muted);
+  .album-viewer__title a { color: var(--brand-ink); text-decoration: none; }
+  .album-viewer__title a:hover { color: var(--brand); }
+  .album-viewer__title span { color: var(--brand-ink); }
+  .album-viewer__meta { font-size: var(--text-sm); color: var(--muted); margin: 0; }
+
+  .album-viewer__thumbs {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 96px;
+    gap: var(--space-3);
+    justify-content: start;
+    margin-top: var(--space-4);
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
+  @media (min-width: 768px) { .album-viewer__thumbs { justify-content: center; } }
+  .album-viewer__thumb {
+    width: 96px;
+    height: 72px;
+    padding: 0;
+    border: 3px solid transparent;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--brand-soft);
+    scroll-snap-align: start;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .album-viewer__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  @media (hover: hover) and (pointer: fine) {
+    .album-viewer__thumb:hover { transform: translateY(-2px); }
+  }
+  .album-viewer__thumb--active { border-color: var(--brand); }
+  .album-viewer__thumb:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
   @media (prefers-reduced-motion: reduce) {
-    .album-card, .album-card__cover img, .album-teaser__view-all { transition: none; }
+    .album-viewer__nav, .album-viewer__nav svg, .album-viewer__thumb { transition-property: background-color, border-color, color, box-shadow; }
+    .album-viewer__nav:hover, .album-viewer__nav:active, .album-viewer__thumb:hover, .album-viewer__nav:hover svg { transform: none; }
+    .album-viewer__main :global(.album-viewer__fade) { transition-duration: .15s; }
   }
 </style>

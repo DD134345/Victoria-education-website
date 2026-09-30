@@ -1,0 +1,216 @@
+---
+// PhotoFrame — a branded frame for one photo slot (see src/assets/photos/README.md).
+// The owner drops a file named after the slot key into src/assets/photos/ and it
+// appears here, cropped to the frame and served as AVIF/WebP via astro:assets.
+// Until then the frame shows a soft green/pink placeholder; in `npm run dev` the
+// placeholder also names the exact file to add. Production never shows that
+// hint text. Parents decide whether to render a frame at all in production
+// (see hasPhoto()): layout frames (hero, banners) may render empty-but-pretty,
+// content frames (gallery, cards) should be hidden when their photo is missing.
+//
+// Shapes: blob (organic, slow morph) · arch (rounded top) · rounded (card) ·
+// portrait (4:5 staff photo) · circle. Motion is transform/border-radius only and
+// stops under prefers-reduced-motion (global.css).
+import type { ImageMetadata } from 'astro';
+import { Picture } from 'astro:assets';
+import { photo, altFor } from '../lib/photos';
+
+interface Props {
+  /** Slot key, e.g. "home-hero" or "banners/lien-he" (file name without extension) */
+  photoKey?: string;
+  /** Pass an image directly instead of a slot key (galleries) */
+  src?: ImageMetadata;
+  /** Alt text fallback; photos.json overrides it per key */
+  alt?: string;
+  shape?: 'blob' | 'arch' | 'rounded' | 'portrait' | 'circle';
+  /** CSS aspect-ratio, e.g. "4 / 3". Defaults by shape. */
+  ratio?: string;
+  tone?: 'green' | 'pink';
+  /** Responsive sizes attribute for the generated srcset */
+  sizes?: string;
+  /** Above-the-fold frames: load eagerly with high priority (LCP) */
+  eager?: boolean;
+  /** Offset backdrop + dots around the frame */
+  decorate?: boolean;
+  class?: string;
+}
+
+const {
+  photoKey,
+  src,
+  alt = '',
+  shape = 'rounded',
+  ratio,
+  tone = 'green',
+  sizes = '(min-width: 1024px) 40vw, 100vw',
+  eager = false,
+  decorate = true,
+  class: extraClass,
+} = Astro.props;
+
+const image = src ?? (photoKey ? photo(photoKey) : undefined);
+const altText = photoKey ? altFor(photoKey, alt) : alt;
+const defaultRatio = { blob: '1 / 1', arch: '4 / 5', rounded: '4 / 3', portrait: '4 / 5', circle: '1 / 1' }[shape];
+const dev = import.meta.env.DEV;
+// Short, readable hint: path under src/assets/photos/ (the README explains the folder).
+const hintPath = photoKey ? `${photoKey}.jpg` : '';
+const widths = image ? [400, 640, 960, 1280, 1600].filter((w) => w <= image.width) : [];
+if (image && widths.length === 0) widths.push(image.width);
+---
+<figure
+  class:list={['pf', `pf--${shape}`, `pf--${tone}`, { 'pf--empty': !image, 'pf--plain': !decorate }, extraClass]}
+  style={`--pf-ratio: ${ratio ?? defaultRatio};`}
+  data-photo-slot={photoKey}
+>
+  {decorate && <span class="pf__back" aria-hidden="true"></span>}
+  <div class="pf__frame">
+    {image ? (
+      <Picture
+        src={image}
+        alt={altText}
+        formats={['avif', 'webp']}
+        widths={widths}
+        sizes={sizes}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchpriority={eager ? 'high' : 'auto'}
+        class="pf__img"
+      />
+    ) : (
+      <div class="pf__ph" aria-hidden="true">
+        <svg class="pf__ph-art" viewBox="0 0 120 120" focusable="false">
+          <circle cx="60" cy="64" r="30" class="pf__ph-apple" />
+          <path d="M60 34c3-10 11-15 21-13-2 10-10 15-21 13Z" class="pf__ph-leaf" />
+          <path d="M28 96c10-8 22-12 32-12s22 4 32 12" class="pf__ph-hill" />
+        </svg>
+        {dev && hintPath && (
+          <span class="pf__hint">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" />
+            </svg>
+            <code>{hintPath}</code>
+          </span>
+        )}
+      </div>
+    )}
+  </div>
+  {decorate && (
+    <>
+      <span class="pf__dot pf__dot--a" aria-hidden="true"></span>
+      <span class="pf__dot pf__dot--b" aria-hidden="true"></span>
+    </>
+  )}
+</figure>
+
+<style>
+  .pf {
+    --pf-radius: 28px;
+    --pf-back: var(--brand-tint);
+    --pf-dot: var(--accent);
+    position: relative;
+    margin: 0;
+    isolation: isolate;
+  }
+  .pf--pink { --pf-back: var(--accent-soft); --pf-dot: var(--apple); }
+
+  .pf__frame {
+    position: relative;
+    z-index: 1;
+    aspect-ratio: var(--pf-ratio);
+    overflow: hidden;
+    border-radius: var(--pf-radius);
+    background: #fff;
+    box-shadow: 0 14px 36px rgb(59 74 0 / 0.14);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  }
+  .pf__frame :global(picture) { display: contents; }
+  .pf__frame :global(.pf__img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pf:hover .pf__frame :global(.pf__img) { transform: scale(1.04); }
+
+  /* Offset backdrop: same shape, shifted, in the soft brand colour */
+  .pf__back {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: var(--pf-radius);
+    background: var(--pf-back);
+    transform: translate(14px, 14px) rotate(2deg);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pf:hover .pf__back { transform: translate(18px, 18px) rotate(3.5deg); }
+  .pf--pink .pf__back { transform: translate(-14px, 14px) rotate(-2deg); }
+  .pf--pink:hover .pf__back { transform: translate(-18px, 18px) rotate(-3.5deg); }
+
+  .pf__dot {
+    position: absolute;
+    z-index: 2;
+    border-radius: 50%;
+    background: var(--pf-dot);
+    pointer-events: none;
+  }
+  .pf__dot--a { width: 22px; height: 22px; top: -8px; right: 12%; animation: float 6s ease-in-out infinite; }
+  .pf__dot--b { width: 12px; height: 12px; bottom: 10%; left: -6px; opacity: 0.7; background: var(--brand); animation: float 7s ease-in-out -2s infinite; }
+
+  /* Shapes */
+  .pf--arch { --pf-radius: 999px 999px 28px 28px; }
+  .pf--portrait { --pf-radius: 24px; }
+  .pf--circle { --pf-radius: 50%; }
+  .pf--blob .pf__frame,
+  .pf--blob .pf__back {
+    border-radius: 58% 42% 50% 50% / 46% 54% 46% 54%;
+    animation: pf-morph 14s ease-in-out infinite;
+  }
+  .pf--blob .pf__back { animation-delay: -5s; }
+
+  @keyframes pf-morph {
+    0%, 100% { border-radius: 58% 42% 50% 50% / 46% 54% 46% 54%; }
+    33% { border-radius: 46% 54% 42% 58% / 55% 45% 55% 45%; }
+    66% { border-radius: 52% 48% 58% 42% / 42% 58% 44% 56%; }
+  }
+
+  .pf--plain .pf__frame { box-shadow: 0 6px 18px rgb(59 74 0 / 0.1); }
+
+  /* Placeholder (no photo yet) */
+  .pf__ph {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 25% 20%, rgb(255 132 130 / 0.25), transparent 45%),
+      radial-gradient(circle at 80% 85%, rgb(163 178 42 / 0.28), transparent 50%),
+      linear-gradient(135deg, var(--brand-soft), var(--accent-soft));
+  }
+  .pf__ph-art { width: min(38%, 120px); height: auto; opacity: 0.9; }
+  .pf__ph-apple { fill: var(--brand-tint); }
+  .pf__ph-leaf { fill: var(--apple); opacity: 0.6; }
+  .pf__ph-hill { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; opacity: 0.9; }
+  .pf--pink .pf__ph-apple { fill: #ffd6d4; }
+  .pf__hint {
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    text-align: center;
+    background: rgb(255 255 255 / 0.92);
+    border: 1.5px dashed var(--brand);
+    color: var(--brand-ink);
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  .pf__hint svg { flex-shrink: 0; }
+  .pf__hint code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-word; }
+  .pf--blob .pf__hint, .pf--circle .pf__hint { bottom: 22%; left: 14%; right: 14%; }
+  .pf--arch .pf__hint { bottom: 12%; }
+</style>

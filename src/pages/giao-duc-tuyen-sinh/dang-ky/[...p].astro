@@ -1,9 +1,38 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Đăng ký tuyển sinh (WEB-09): consent notice first, then the admissions team's
+// Google Form in an iframe. The site stores nothing: there is no <form> here
+// (hard rules R1, R4). Generated only when site-config.admissionsFormUrl is a
+// Google Forms URL (CSP frame-src allows docs.google.com only).
 import PageLayout from '../../../layouts/PageLayout.astro';
-import { onlyIf } from '../../../lib/nav';
-export const getStaticPaths = () => onlyIf('/giao-duc-tuyen-sinh/dang-ky/');
+import ConsentNotice from '../../../components/ConsentNotice.astro';
+import { onlyIf, isVisible } from '../../../lib/nav';
+import siteConfig from '../../../data/site-config.json';
+
+export async function getStaticPaths() {
+  const raw = (siteConfig as Record<string, unknown>).admissionsFormUrl;
+  const ok = typeof raw === 'string' && raw.startsWith('https://docs.google.com/forms/');
+  return ok ? onlyIf('/giao-duc-tuyen-sinh/dang-ky/') : [];
+}
+
+const formUrl = new URL(String((siteConfig as Record<string, unknown>).admissionsFormUrl));
+formUrl.searchParams.set('embedded', 'true');
+const privacy = await isVisible('/chinh-sach-bao-mat/');
+const body = 'Thông tin phụ huynh điền vào biểu mẫu được gửi trực tiếp tới bộ phận tuyển sinh của nhà trường qua Google Form. Website không lưu, không đọc và không xử lý các thông tin này.';
 ---
-<PageLayout title="Đăng ký tuyển sinh">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Đăng ký tuyển sinh" eyebrow="Giáo dục – Tuyển sinh" tone="pink"
+  lead="Để lại thông tin, bộ phận tuyển sinh sẽ liên hệ để hẹn lịch tham quan trường.">
+  <ConsentNotice body={body}>
+    <div slot="form-embed" class="form-embed">
+      <iframe src={formUrl.toString()} title="Biểu mẫu đăng ký tuyển sinh (Google Form)" loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin">Đang tải biểu mẫu…</iframe>
+      <p class="form-embed__alt">Biểu mẫu không hiển thị? <a href={formUrl.toString().replace('embedded=true', '')} rel="noopener" target="_blank">Mở biểu mẫu trong tab mới</a>.</p>
+    </div>
+  </ConsentNotice>
+  {privacy && <p class="privacy">Xem đầy đủ <a href="/chinh-sach-bao-mat/">Chính sách bảo mật</a> của nhà trường.</p>}
 </PageLayout>
+
+<style>
+  .form-embed iframe { width: 100%; min-height: 1100px; border: 0; border-radius: 16px; background: #fff; }
+  .form-embed__alt { font-size: var(--text-sm); color: var(--muted); margin-top: var(--space-3); }
+  .privacy { text-align: center; margin: 0 auto; }
+</style>

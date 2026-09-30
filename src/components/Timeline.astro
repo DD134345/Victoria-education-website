@@ -1,13 +1,15 @@
 ---
-// Timeline component (WEB-07b). For educational plans, history, milestones.
-// Vertical line with dots, alternating or same-side cards.
-// Mobile-first: stacked. Desktop: alternating left/right for visual rhythm.
+// Timeline component (restyle-B). Two modes:
+// - 'alternating' (default): milestones with a centre line on desktop.
+// - 'schedule': daily schedule with a vertical green line, time-dot pills and
+//   cards; optional side gallery (one large rounded image + small thumbnails).
+// Mobile-first: everything stacks to a single column below 768px.
 import { Image } from 'astro:assets';
 
 interface TimelineItem {
-  /** Date label (DD/MM/YYYY or "Tháng 10/2025") */
+  /** Date label (DD/MM/YYYY) or time label (07:00) in schedule mode */
   date: string;
-  /** Title of the milestone */
+  /** Title of the milestone / activity */
   title: string;
   /** Description */
   description?: string;
@@ -21,6 +23,11 @@ interface TimelineItem {
   side?: 'left' | 'right' | 'auto';
 }
 
+interface TimelineImage {
+  src: ImageMetadata;
+  alt: string;
+}
+
 interface Props {
   /** Timeline items */
   items: TimelineItem[];
@@ -28,16 +35,22 @@ interface Props {
   heading?: string;
   /** Section subheading */
   subheading?: string;
-  /** Layout: 'alternating' | 'same-side' */
-  layout?: 'alternating' | 'same-side';
+  /** Layout: 'alternating' | 'same-side' | 'schedule' */
+  layout?: 'alternating' | 'same-side' | 'schedule';
+  /** Side gallery (schedule mode): first image is large, rest are thumbnails */
+  images?: TimelineImage[];
   /** Eyebrow label */
   eyebrow?: string;
+  /** Anchor id for the section */
+  id?: string;
 }
 
-const { items, heading, subheading, layout = 'alternating', eyebrow } = Astro.props;
+const { items, heading, subheading, layout = 'alternating', images = [], eyebrow, id } = Astro.props;
+const isSchedule = layout === 'schedule';
+const galleryId = `timeline-gallery-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
-<section class="timeline" aria-labelledby={heading ? 'timeline-heading' : undefined}>
+<section class={`timeline timeline--${isSchedule ? 'schedule' : layout}`} aria-labelledby={heading ? 'timeline-heading' : undefined} {...(id ? { id } : {})}>
   <div class="container">
     {(heading || eyebrow) && (
       <header class="timeline__header">
@@ -46,34 +59,86 @@ const { items, heading, subheading, layout = 'alternating', eyebrow } = Astro.pr
         {subheading && <p class="timeline__subheading">{subheading}</p>}
       </header>
     )}
-    <ol class="timeline__list">
-      {items.map((item, index) => {
-        const side = item.side === 'auto' || !item.side
-          ? (layout === 'alternating' ? (index % 2 === 0 ? 'left' : 'right') : 'right')
-          : item.side;
-        return (
-          <li class={`timeline__item timeline__item--${side}`}>
-            <div class="timeline__marker" aria-hidden="true">
-              <span class={`timeline__dot timeline__dot--${item.icon || 'default'}`}></span>
+    <div class={images.length > 0 ? 'timeline__split' : undefined}>
+      <ol class="timeline__list">
+        {items.map((item, index) => {
+          const side = isSchedule
+            ? 'right'
+            : item.side === 'auto' || !item.side
+              ? (layout === 'alternating' ? (index % 2 === 0 ? 'left' : 'right') : 'right')
+              : item.side;
+          return (
+            <li class={`timeline__item timeline__item--${side}`} data-reveal style={`--reveal-delay: ${(index % 4) * 80}ms;`}>
+              <div class="timeline__marker" aria-hidden="true">
+                <span class={`timeline__dot timeline__dot--${item.icon || 'default'}`}></span>
+              </div>
+              <time class="timeline__date" datetime={item.date}>{item.date}</time>
+              <article class="timeline__card">
+                <h3 class="timeline__title">{item.title}</h3>
+                {item.description && <p class="timeline__description">{item.description}</p>}
+                {item.image && (
+                  <div class="timeline__media">
+                    <Image src={item.image} alt={item.imageAlt || ''} loading="lazy" />
+                  </div>
+                )}
+              </article>
+            </li>
+          );
+        })}
+      </ol>
+      {images.length > 0 && (
+        <div class="timeline__gallery" id={galleryId} data-reveal>
+          <div class="timeline__main">
+            <Image src={images[0].src} alt={images[0].alt} loading="lazy" class="timeline__main-img" />
+          </div>
+          {images.length > 1 && (
+            <div class="timeline__thumbs" role="group" aria-label="Chọn ảnh xem trước">
+              {images.map((img, i) => (
+                <button
+                  type="button"
+                  class={`timeline__thumb${i === 0 ? ' timeline__thumb--active' : ''}`}
+                  data-thumb={i}
+                  aria-label={`Xem ảnh ${i + 1}: ${img.alt}`}
+                  aria-pressed={i === 0 ? 'true' : 'false'}
+                >
+                  <Image src={img.src} alt="" loading="lazy" />
+                </button>
+              ))}
             </div>
-            <time class="timeline__date" datetime={item.date}>{item.date}</time>
-            <article class="timeline__card">
-              <h3 class="timeline__title">{item.title}</h3>
-              {item.description && <p class="timeline__description">{item.description}</p>}
-              {item.image && (
-                <div class="timeline__media">
-                  <Image src={item.image} alt={item.imageAlt || ''} loading="lazy" />
-                </div>
-              )}
-            </article>
-          </li>
-        );
-      })}
-    </ol>
+          )}
+        </div>
+      )}
+    </div>
   </div>
 </section>
 
+<script is:inline define:vars={{ galleryId }}>
+  // Thumbnail swap for the schedule gallery (progressive enhancement).
+  (function () {
+    var root = document.getElementById(galleryId);
+    if (!root) return;
+    var main = root.querySelector('.timeline__main img');
+    var thumbs = Array.prototype.slice.call(root.querySelectorAll('[data-thumb]'));
+    if (!main || thumbs.length < 2) return;
+    thumbs.forEach(function (btn, i) {
+      btn.addEventListener('click', function () {
+        var img = btn.querySelector('img');
+        if (!img) return;
+        main.src = img.currentSrc || img.src;
+        var full = img.getAttribute('data-full');
+        if (full) main.src = full;
+        main.alt = btn.getAttribute('aria-label') || main.alt;
+        thumbs.forEach(function (b, j) {
+          b.classList.toggle('timeline__thumb--active', j === i);
+          b.setAttribute('aria-pressed', j === i ? 'true' : 'false');
+        });
+      });
+    });
+  })();
+</script>
+
 <style>
+  .timeline { padding: var(--space-12) 0; }
   .timeline__header { margin-bottom: var(--space-10); text-align: center; }
   .timeline__eyebrow {
     display: inline-block;
@@ -82,18 +147,19 @@ const { items, heading, subheading, layout = 'alternating', eyebrow } = Astro.pr
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--brand);
-    background: var(--brand-tint);
+    color: var(--brand-ink);
+    background: #fff;
+    border: 1px solid var(--brand-tint);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
-    margin-bottom: var(--space-3);
+    margin: 0 0 var(--space-3);
   }
   .timeline__heading {
     font-family: var(--font-heading);
     font-size: var(--text-2xl);
     font-weight: 700;
     color: var(--brand-ink);
-    margin-bottom: var(--space-2);
+    margin: 0 0 var(--space-2);
   }
   .timeline__subheading {
     font-size: var(--text-base);
@@ -111,110 +177,153 @@ const { items, heading, subheading, layout = 'alternating', eyebrow } = Astro.pr
   .timeline__list::before {
     content: '';
     position: absolute;
-    top: 0;
-    bottom: 0;
+    top: 8px;
+    bottom: 8px;
     left: 1.5rem;
-    width: 2px;
-    background: var(--brand-tint);
+    width: 3px;
+    border-radius: 3px;
+    background: var(--brand);
+    opacity: 0.35;
   }
   @media (min-width: 768px) {
-    .timeline__list::before { left: 50%; transform: translateX(-50%); }
+    .timeline--alternating .timeline__list::before { left: 50%; transform: translateX(-50%); }
   }
 
   .timeline__item {
     position: relative;
-    padding-left: calc(1.5rem + var(--space-4) + 12px);
-    margin-bottom: var(--space-10);
+    padding-left: calc(1.5rem + var(--space-4) + 14px);
+    margin-bottom: var(--space-6);
   }
   .timeline__item:last-child { margin-bottom: 0; }
   @media (min-width: 768px) {
-    .timeline__item { padding-left: 0; width: 50%; }
-    .timeline__item--left { padding-right: calc(50% + var(--space-6)); text-align: right; }
-    .timeline__item--right { margin-left: 50%; padding-left: calc(50% + var(--space-6)); }
+    .timeline--alternating .timeline__item { padding-left: 0; width: 50%; }
+    .timeline--alternating .timeline__item--left { padding-right: calc(var(--space-8)); text-align: right; }
+    .timeline--alternating .timeline__item--right { margin-left: 50%; padding-left: var(--space-8); }
+    .timeline--same-side .timeline__item { max-width: 44rem; }
   }
 
   .timeline__marker {
     position: absolute;
     left: 1.5rem;
-    top: 0;
+    top: 2px;
+    transform: translateX(-50%);
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
     z-index: 1;
   }
   @media (min-width: 768px) {
-    .timeline__marker { left: 50%; transform: translateX(-50%); }
-    .timeline__item--left .timeline__marker { left: 50%; transform: translateX(-50%); }
-    .timeline__item--right .timeline__marker { left: 50%; transform: translateX(-50%); }
+    .timeline--alternating .timeline__marker { left: 50%; }
+    .timeline--alternating .timeline__item--left .timeline__marker { left: 100%; }
+    .timeline--alternating .timeline__item--right .timeline__marker { left: 0; }
   }
 
   .timeline__dot {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    border: 3px solid var(--surface);
-    box-shadow: 0 0 0 2px var(--brand-tint);
+    border: 4px solid #fff;
+    box-shadow: 0 0 0 3px var(--brand);
     background: var(--brand);
     position: relative;
   }
-  .timeline__dot--check::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 6px;
-    height: 10px;
-    border: solid #fff;
-    border-width: 0 2px 2px 0;
-    transform: translate(-50%, -50%) rotate(45deg);
-  }
+  .timeline__dot--check { background: var(--brand); }
   .timeline__dot--star {
     background: var(--accent-strong);
-    box-shadow: 0 0 0 2px var(--accent-soft);
+    box-shadow: 0 0 0 3px var(--accent-strong);
   }
   .timeline__dot--apple {
     background: var(--apple);
-    box-shadow: 0 0 0 2px var(--brand-tint);
+    box-shadow: 0 0 0 3px var(--apple);
   }
 
   .timeline__date {
-    display: block;
-    font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--brand);
-    margin-bottom: var(--space-2);
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: #fff;
+    background: var(--brand);
+    border-radius: var(--radius-pill);
+    padding: var(--space-1) var(--space-4);
+    margin-bottom: var(--space-3);
     white-space: nowrap;
   }
-  @media (min-width: 768px) {
-    .timeline__item--left .timeline__date { margin-right: var(--space-4); }
-    .timeline__item--right .timeline__date { margin-left: var(--space-4); }
-  }
+  .timeline--schedule .timeline__date { background: var(--brand); }
 
   .timeline__card {
-    background: var(--surface);
+    background: #fff;
     border: 1px solid var(--brand-tint);
-    border-radius: var(--radius-lg);
+    border-radius: 22px;
     padding: var(--space-5);
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 10px rgb(59 74 0 / 0.06);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
   }
+  .timeline__card:hover { box-shadow: var(--shadow); transform: translateY(-3px); }
   .timeline__title {
     font-family: var(--font-heading);
     font-size: var(--text-lg);
     font-weight: 700;
     color: var(--brand-ink);
-    margin-bottom: var(--space-2);
+    margin: 0 0 var(--space-2);
   }
   .timeline__description {
     font-size: var(--text-base);
     color: var(--muted);
     line-height: var(--leading);
-    margin-bottom: var(--space-3);
+    margin: 0;
   }
+  .timeline__description + .timeline__media { margin-top: var(--space-3); }
   .timeline__media {
     border-radius: var(--radius-md);
     overflow: hidden;
   }
   .timeline__media img { width: 100%; height: auto; display: block; }
+
+  /* Schedule side gallery: one large rounded image + small thumbnails. */
+  .timeline__gallery { margin-top: var(--space-8); }
+  .timeline__main {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 6px solid #fff;
+    box-shadow: var(--shadow);
+    background: var(--brand-soft);
+  }
+  .timeline__main img { width: 100%; height: auto; display: block; aspect-ratio: 4 / 3; object-fit: cover; }
+  .timeline__thumbs {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 88px;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    scroll-snap-type: x mandatory;
+  }
+  .timeline__thumb {
+    width: 88px;
+    height: 88px;
+    padding: 0;
+    border: 3px solid transparent;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--brand-soft);
+    scroll-snap-align: start;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .timeline__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .timeline__thumb:hover { transform: translateY(-2px); }
+  .timeline__thumb--active { border-color: var(--brand); }
+  .timeline__thumb:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  @media (min-width: 1024px) {
+    .timeline--schedule .timeline__split {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: var(--space-10);
+      align-items: start;
+    }
+    .timeline__gallery { margin-top: 0; position: sticky; top: var(--space-6); }
+  }
 </style>

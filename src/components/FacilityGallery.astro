@@ -1,0 +1,32 @@
+---
+// FacilityGallery: every photo in src/assets/photos/co-so-vat-chat/ (sorted by file
+// name), in branded frames. Renders nothing while the folder is empty.
+import PhotoFrame from './PhotoFrame.astro';
+import { photosIn, altFor } from '../lib/photos';
+
+interface Props { limit?: number; heading?: string }
+const { limit, heading } = Astro.props;
+const all = photosIn('co-so-vat-chat');
+const photos = limit ? all.slice(0, limit) : all;
+---
+{photos.length > 0 && (
+  <section class="fg" aria-label={heading ? undefined : 'Ảnh cơ sở vật chất'}>
+    {heading && <h2 class="fg__title">{heading}</h2>}
+    <ul class="fg__grid" role="list">
+      {photos.map((p, i) => (
+        <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+          <PhotoFrame src={p.src} alt={altFor(p.key, `Cơ sở vật chất – ảnh ${i + 1}`)} shape={i % 3 === 1 ? 'arch' : 'rounded'}
+            tone={i % 2 ? 'pink' : 'green'} sizes="(min-width: 1024px) 33vw, (min-width: 600px) 50vw, 100vw" />
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .fg { margin: var(--space-12) 0; }
+  .fg__title { margin-bottom: var(--space-6); }
+  .fg__grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-10) var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 600px) { .fg__grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .fg__grid { grid-template-columns: repeat(3, 1fr); } }
+</style>

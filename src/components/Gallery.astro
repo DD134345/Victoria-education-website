@@ -1,7 +1,7 @@
 ---
-// Gallery component (WEB-07b). For album detail pages.
-// Lazy loading, keyboard-accessible lightbox, no external library (vanilla JS < 10 KB).
-// Images via astro:assets (AVIF+WebP, srcset, width/height).
+// Gallery component (restyle-B). For album detail pages.
+// Lazy loading, keyboard-accessible lightbox, no external library (vanilla JS).
+// Images via astro:assets. Rounded 22px cards with hover lift.
 import { Image } from 'astro:assets';
 
 interface GalleryImage {
@@ -20,27 +20,31 @@ interface Props {
   images: GalleryImage[];
   /** Consent register reference (for child photos) */
   consentRegisterRef?: string;
+  /** Heading level: h2 when several albums share a page (PageLayout owns the h1) */
+  as?: 'h1' | 'h2';
 }
 
-const { title, date, category, images, consentRegisterRef } = Astro.props;
+import { formatVnDate } from '../lib/dates';
+const { title, date, category, images, consentRegisterRef, as: Heading = 'h2' } = Astro.props;
 
 const categoryLabels = {
   'co-so-vat-chat': 'Cơ sở vật chất',
   'hinh-anh-cac-be': 'Hình ảnh các bé',
 };
+const galleryId = `gallery-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
-<article class="gallery" aria-labelledby="gallery-title">
+<article class="gallery" aria-labelledby={`${galleryId}-title`} id={galleryId}>
   <header class="gallery__header">
     <div class="gallery__meta">
       <span class={`gallery__category gallery__category--${category}`}>
         {categoryLabels[category]}
       </span>
       <time class="gallery__date" datetime={date.toISOString()}>
-        {date.toLocaleDateString('vi-VN')}
+        {formatVnDate(date)}
       </time>
     </div>
-    <h1 id="gallery-title" class="gallery__title">{title}</h1>
+    <Heading id={`${galleryId}-title`} class="gallery__title">{title}</Heading>
     {consentRegisterRef && (
       <p class="gallery__consent">
         Đã kiểm tra đồng ý ảnh: {consentRegisterRef}
@@ -50,7 +54,7 @@ const categoryLabels = {
 
   <div class="gallery__grid" role="list" aria-label={`${images.length} ảnh trong album`}>
     {images.map((image, index) => (
-      <figure class="gallery__item" role="listitem">
+      <figure class="gallery__item" role="listitem" data-reveal style={`--reveal-delay: ${(index % 3) * 90}ms;`}>
         <button
           class="gallery__trigger"
           type="button"
@@ -67,20 +71,20 @@ const categoryLabels = {
 </article>
 
 <!-- Lightbox (hidden by default, shown via JS) -->
-<div class="gallery__lightbox" id="gallery-lightbox" hidden role="dialog" aria-modal="true" aria-label="Xem ảnh phóng to">
+<div class="gallery__lightbox" data-lightbox hidden role="dialog" aria-modal="true" aria-label="Xem ảnh phóng to">
   <button class="gallery__close" type="button" aria-label="Đóng">
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="26" height="26">
       <line x1="18" y1="6" x2="6" y2="18"></line>
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
   </button>
-  <button class="gallery__nav gallery__nav--prev" type="button" aria-label="Ảnh trước">
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+  <button class="gallery__nav gallery__nav--prev" type="button" data-lightbox-prev aria-label="Ảnh trước">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="26" height="26">
       <polyline points="15 18 9 12 15 6"></polyline>
     </svg>
   </button>
-  <button class="gallery__nav gallery__nav--next" type="button" aria-label="Ảnh sau">
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+  <button class="gallery__nav gallery__nav--next" type="button" data-lightbox-next aria-label="Ảnh sau">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="26" height="26">
       <polyline points="9 18 15 12 9 6"></polyline>
     </svg>
   </button>
@@ -91,26 +95,36 @@ const categoryLabels = {
   </div>
 </div>
 
-<script is:inline>
-  // Vanilla JS lightbox - no external library, ~3 KB gzipped
-  const triggers = document.querySelectorAll('.gallery__trigger');
-  const lightbox = document.getElementById('gallery-lightbox');
-  const lightboxImg = lightbox?.querySelector('.gallery__lightbox-img');
-  const lightboxCaption = lightbox?.querySelector('.gallery__lightbox-caption');
-  const lightboxCounter = lightbox?.querySelector('.gallery__lightbox-counter');
-  const closeBtn = lightbox?.querySelector('.gallery__close');
-  const prevBtn = lightbox?.querySelector('.gallery__nav--prev');
-  const nextBtn = lightbox?.querySelector('.gallery__nav--next');
+<script is:inline define:vars={{ galleryId }}>
+  // Vanilla JS lightbox - no external library, scoped per gallery instance.
+  (function () {
+    var root = document.getElementById(galleryId);
+    if (!root) return;
+    var triggers = Array.prototype.slice.call(root.querySelectorAll('.gallery__trigger'));
+    var lightbox = root.nextElementSibling;
+    if (!lightbox || !lightbox.hasAttribute('data-lightbox')) {
+      lightbox = document.querySelector('#' + galleryId + ' + [data-lightbox]');
+    }
+    if (!triggers.length || !lightbox) return;
+    var lightboxImg = lightbox.querySelector('.gallery__lightbox-img');
+    var lightboxCaption = lightbox.querySelector('.gallery__lightbox-caption');
+    var lightboxCounter = lightbox.querySelector('.gallery__lightbox-counter');
+    var closeBtn = lightbox.querySelector('.gallery__close');
+    var prevBtn = lightbox.querySelector('[data-lightbox-prev]');
+    var nextBtn = lightbox.querySelector('[data-lightbox-next]');
+    if (!lightboxImg || !closeBtn || !prevBtn || !nextBtn) return;
 
-  if (triggers.length && lightbox && lightboxImg && lightboxCaption && lightboxCounter && closeBtn && prevBtn && nextBtn) {
-    const imagesData = Array.from(triggers).map((trigger, i) => ({
-      src: trigger.querySelector('img')?.src || '',
-      alt: trigger.querySelector('img')?.alt || '',
-      caption: trigger.nextElementSibling?.textContent || '',
-    }));
+    var imagesData = triggers.map(function (trigger) {
+      var img = trigger.querySelector('img');
+      return {
+        src: img ? img.currentSrc || img.src : '',
+        alt: img ? img.alt : '',
+        caption: trigger.nextElementSibling ? trigger.nextElementSibling.textContent : '',
+      };
+    });
 
-    let currentIndex = 0;
-    let focusBeforeOpen = null;
+    var currentIndex = 0;
+    var focusBeforeOpen = null;
 
     function openLightbox(index) {
       currentIndex = index;
@@ -126,15 +140,15 @@ const categoryLabels = {
       lightbox.hidden = true;
       document.body.style.overflow = '';
       document.removeEventListener('keydown', handleKeydown);
-      focusBeforeOpen?.focus();
+      if (focusBeforeOpen && focusBeforeOpen.focus) focusBeforeOpen.focus();
     }
 
     function updateLightbox() {
-      const data = imagesData[currentIndex];
+      var data = imagesData[currentIndex];
       lightboxImg.src = data.src;
       lightboxImg.alt = data.alt;
-      lightboxCaption.textContent = data.caption;
-      lightboxCounter.textContent = `${currentIndex + 1} / ${imagesData.length}`;
+      if (lightboxCaption) lightboxCaption.textContent = data.caption;
+      if (lightboxCounter) lightboxCounter.textContent = (currentIndex + 1) + ' / ' + imagesData.length;
     }
 
     function showPrev() {
@@ -152,10 +166,9 @@ const categoryLabels = {
       else if (e.key === 'ArrowLeft') { e.preventDefault(); showPrev(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); showNext(); }
       else if (e.key === 'Tab') {
-        // Trap focus inside lightbox
-        const focusable = lightbox.querySelectorAll('button');
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
+        var focusable = lightbox.querySelectorAll('button');
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
         if (e.shiftKey && document.activeElement === first) {
           e.preventDefault(); last.focus();
         } else if (!e.shiftKey && document.activeElement === last) {
@@ -164,30 +177,25 @@ const categoryLabels = {
       }
     }
 
-    triggers.forEach((trigger, i) => {
-      trigger.addEventListener('click', () => openLightbox(i));
-      trigger.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(i); }
-      });
+    triggers.forEach(function (trigger, i) {
+      trigger.addEventListener('click', function () { openLightbox(i); });
     });
 
     closeBtn.addEventListener('click', closeLightbox);
     prevBtn.addEventListener('click', showPrev);
     nextBtn.addEventListener('click', showNext);
 
-    // Close on backdrop click
-    lightbox.addEventListener('click', (e) => {
+    lightbox.addEventListener('click', function (e) {
       if (e.target === lightbox) closeLightbox();
     });
 
-    // Touch swipe support
-    let touchStartX = 0;
-    lightbox.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
-    lightbox.addEventListener('touchend', (e) => {
-      const diff = e.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(diff) > 50) { diff > 0 ? showPrev() : showNext(); }
+    var touchStartX = 0;
+    lightbox.addEventListener('touchstart', function (e) { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+    lightbox.addEventListener('touchend', function (e) {
+      var diff = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(diff) > 50) { if (diff > 0) showPrev(); else showNext(); }
     }, { passive: true });
-  }
+  })();
 </script>
 
 <style>
@@ -204,7 +212,7 @@ const categoryLabels = {
     font-family: var(--font-body);
     font-size: var(--text-sm);
     font-weight: 600;
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
     color: #fff;
   }
@@ -225,6 +233,7 @@ const categoryLabels = {
     font-size: var(--text-sm);
     color: var(--muted);
     font-style: italic;
+    margin: 0;
   }
 
   .gallery__grid {
@@ -232,38 +241,39 @@ const categoryLabels = {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+    gap: var(--space-5);
   }
 
   .gallery__item {
     margin: 0;
-    background: var(--surface);
+    background: #fff;
     border: 1px solid var(--brand-tint);
-    border-radius: var(--radius-lg);
+    border-radius: 22px;
     overflow: hidden;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 2px 10px rgb(59 74 0 / 0.06);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
   }
   .gallery__item:hover {
     box-shadow: var(--shadow);
     border-color: var(--brand);
-    transform: translateY(-2px);
+    transform: translateY(-4px);
   }
 
   .gallery__trigger {
     display: block;
-    background: none;
+    background: var(--brand-soft);
     border: none;
     padding: 0;
     cursor: pointer;
     width: 100%;
+    min-height: var(--tap);
     aspect-ratio: 4 / 3;
     overflow: hidden;
   }
   .gallery__trigger:focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: -3px;
-    z-index: 1;
   }
   .gallery__trigger img {
     width: 100%;
@@ -271,13 +281,14 @@ const categoryLabels = {
     object-fit: cover;
     transition: transform 0.4s ease;
   }
-  .gallery__item:hover .gallery__trigger img { transform: scale(1.03); }
+  .gallery__item:hover .gallery__trigger img { transform: scale(1.04); }
 
   .gallery__caption {
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     font-size: var(--text-sm);
     color: var(--muted);
     text-align: center;
+    margin: 0;
   }
 
   /* Lightbox */
@@ -285,7 +296,7 @@ const categoryLabels = {
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.95);
+    background: rgba(31, 38, 20, 0.95);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -297,9 +308,9 @@ const categoryLabels = {
     position: absolute;
     top: var(--space-4);
     right: var(--space-4);
-    width: 48px;
-    height: 48px;
-    background: var(--surface);
+    width: var(--tap);
+    height: var(--tap);
+    background: #fff;
     border: none;
     border-radius: 50%;
     display: grid;
@@ -309,16 +320,16 @@ const categoryLabels = {
     transition: background-color 0.2s ease, transform 0.2s ease;
     z-index: 10;
   }
-  .gallery__close:hover { background: var(--brand-soft); color: var(--brand); transform: scale(1.1); }
+  .gallery__close:hover { background: var(--brand-soft); color: var(--brand); transform: scale(1.06); }
   .gallery__close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
   .gallery__nav {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 48px;
-    height: 48px;
-    background: var(--surface);
+    width: var(--tap);
+    height: var(--tap);
+    background: #fff;
     border: none;
     border-radius: 50%;
     display: grid;
@@ -328,7 +339,7 @@ const categoryLabels = {
     transition: background-color 0.2s ease, transform 0.2s ease;
     z-index: 10;
   }
-  .gallery__nav:hover { background: var(--brand-soft); color: var(--brand); transform: translateY(-50%) scale(1.1); }
+  .gallery__nav:hover { background: var(--brand-soft); color: var(--brand); }
   .gallery__nav:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
   .gallery__nav--prev { left: var(--space-4); }
   .gallery__nav--next { right: var(--space-4); }
@@ -345,19 +356,18 @@ const categoryLabels = {
     border-radius: var(--radius-md);
     box-shadow: 0 8px 32px rgb(0 0 0 / 0.3);
   }
-.gallery__lightbox-caption {
+  .gallery__lightbox-caption {
     margin: var(--space-3) 0 0;
     font-size: var(--text-base);
-    color: var(--surface);
+    color: #fff;
   }
   .gallery__lightbox-counter {
     margin: var(--space-1) 0 0;
     font-size: var(--text-sm);
-    color: var(--muted);
+    color: rgb(255 255 255 / 0.8);
   }
 
   @media (max-width: 640px) {
-    .gallery__nav { width: 40px; height: 40px; }
     .gallery__nav--prev { left: var(--space-2); }
     .gallery__nav--next { right: var(--space-2); }
     .gallery__close { top: var(--space-2); right: var(--space-2); }
@@ -366,5 +376,6 @@ const categoryLabels = {
 
   @media (prefers-reduced-motion: reduce) {
     .gallery__item, .gallery__trigger img, .gallery__close, .gallery__nav { transition: none; }
+    .gallery__item:hover { transform: none; }
   }
 </style>

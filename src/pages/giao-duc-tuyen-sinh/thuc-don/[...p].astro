@@ -1,9 +1,37 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Thực đơn tuần (WEB-09): the newest approved week as an HTML table (print button
+// inside MenuTable), plus the previous weeks. Hidden until >= 1 approved week.
 import PageLayout from '../../../layouts/PageLayout.astro';
+import MenuTable from '../../../components/MenuTable.astro';
 import { onlyIf } from '../../../lib/nav';
+import { getPublished } from '../../../lib/published';
+import { parseVnDate } from '../../../lib/dates';
 export const getStaticPaths = () => onlyIf('/giao-duc-tuyen-sinh/thuc-don/');
+
+const weeks = (await getPublished('menus'))
+  .map((m) => ({ ...m.data, start: parseVnDate(m.data.week_start) ?? new Date(0) }))
+  .sort((a, b) => b.start.valueOf() - a.start.valueOf());
+const [latest, ...older] = weeks;
 ---
-<PageLayout title="Thực đơn tuần">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Thực đơn tuần" lead="Bữa ăn của bé trong tuần, được nhà bếp cập nhật trước mỗi tuần học.">
+  <div data-reveal><MenuTable weekStart={latest.start} days={latest.days} /></div>
+  {older.length > 0 && (
+    <details class="older">
+      <summary>Các tuần trước ({older.slice(0, 4).length})</summary>
+      {older.slice(0, 4).map((w) => <MenuTable weekStart={w.start} days={w.days} />)}
+    </details>
+  )}
 </PageLayout>
+
+<style>
+  .older { margin-top: var(--space-10); }
+  .older summary {
+    cursor: pointer;
+    min-height: var(--tap);
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    color: var(--brand-ink);
+  }
+  .older > :global(section) { margin-top: var(--space-6); }
+</style>

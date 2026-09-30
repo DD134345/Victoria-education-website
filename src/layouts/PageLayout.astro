@@ -1,18 +1,173 @@
 ---
-// Inner-page layout: BaseLayout + exactly one H1 (the page title).
+// Inner-page layout (WEB-09): BaseLayout + a soft green/pink hero band that
+// holds breadcrumbs, an optional eyebrow, exactly one H1 (the page title) and
+// an optional lead line. Decorative blobs drift slowly (transform only) and
+// the heading fades up on load; both stop under prefers-reduced-motion
+// (global.css). The page body sits in <main> below the band.
 import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { crumbsFor } from '../lib/nav';
+import PhotoFrame from '../components/PhotoFrame.astro';
+import { bannerKey, hasPhoto } from '../lib/photos';
 
 interface Props {
   title: string;
   description?: string;
   lang?: 'vi' | 'en';
+  /** Small label above the H1 (e.g. the parent section) */
+  eyebrow?: string;
+  /** One short sentence under the H1 */
+  lead?: string;
+  /** Hide breadcrumbs (404) */
+  noCrumbs?: boolean;
+  /** Narrow reading column for text pages */
+  narrow?: boolean;
+  /** Pink-leaning hero (notices, admissions) instead of green */
+  tone?: 'green' | 'pink';
 }
 
-const { title, description, lang } = Astro.props;
+const { title, description, lang, eyebrow, lead, noCrumbs = false, narrow = false, tone = 'green' } = Astro.props;
+const crumbs = crumbsFor(Astro.url.pathname, title);
+// Optional banner photo: src/assets/photos/banners/<page>.jpg. Production shows the
+// frame only when the photo exists; dev always shows it (with the file name to add).
+const banner = bannerKey(Astro.url.pathname);
+const showBanner = !noCrumbs && (hasPhoto(banner) || import.meta.env.DEV);
 ---
-<BaseLayout title={title} description={description} lang={lang}>
-  <main class="container">
-    <h1>{title}</h1>
+<BaseLayout title={title} description={description ?? lead} lang={lang}>
+  <header class:list={['page-hero', `page-hero--${tone}`]}>
+    <svg class="page-hero__blobs" viewBox="0 0 1200 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="ph-pink" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#FF8482" />
+          <stop offset="1" stop-color="#FF4344" />
+        </linearGradient>
+        <linearGradient id="ph-apple" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#A3B22A" />
+          <stop offset="1" stop-color="#5C7013" />
+        </linearGradient>
+      </defs>
+      <g class="blob blob--a"><path fill="#E3EBC4" opacity="0.9" d="M1040 40c62 8 118 58 112 124-6 70-74 108-140 98-64-10-104-62-96-120 8-60 62-110 124-102Z" /></g>
+      <g class="blob blob--b"><path fill="url(#ph-pink)" opacity="0.2" d="M150 210c46-10 98 18 104 64 6 44-34 76-80 78-48 2-90-26-92-66-2-38 26-68 68-76Z" /></g>
+      <g class="blob blob--c"><circle cx="930" cy="250" r="18" fill="url(#ph-pink)" opacity="0.5" /></g>
+      <g class="blob blob--d"><circle cx="300" cy="70" r="10" fill="url(#ph-apple)" opacity="0.45" /></g>
+      <g class="blob blob--e"><path fill="none" stroke="#8E9C21" stroke-width="3" stroke-linecap="round" opacity="0.35" d="M760 70c14-16 30-16 44 0s30 16 44 0 30-16 44 0" /></g>
+    </svg>
+    <div class:list={['container', 'page-hero__inner', { 'page-hero__inner--photo': showBanner }]}>
+      <div class="page-hero__text">
+        {!noCrumbs && <Breadcrumbs items={crumbs} current={title} />}
+        {eyebrow && <p class="page-hero__eyebrow">{eyebrow}</p>}
+        <h1 class="page-hero__title">{title}</h1>
+        {lead && <p class="page-hero__lead">{lead}</p>}
+      </div>
+      {showBanner && (
+        <PhotoFrame photoKey={banner} alt={title} shape="arch" ratio="5 / 4" tone={tone === 'pink' ? 'pink' : 'green'}
+          sizes="(min-width: 900px) 380px, 90vw" eager class="page-hero__photo" />
+      )}
+    </div>
+    <svg class="page-hero__wave" viewBox="0 0 1440 48" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path d="M0 30 C 240 52 480 6 720 22 C 960 38 1200 12 1440 28 L1440 48 L0 48 Z" />
+    </svg>
+  </header>
+  <main class:list={['container', 'page-body', { 'page-body--narrow': narrow }]}>
     <slot />
   </main>
 </BaseLayout>
+
+<style>
+  .page-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-4) 0 var(--space-12);
+    background: linear-gradient(135deg, var(--brand-soft) 0%, #fff 55%, var(--accent-soft) 100%);
+  }
+  .page-hero--pink {
+    background: linear-gradient(135deg, var(--accent-soft) 0%, #fff 55%, var(--brand-soft) 100%);
+  }
+  .page-hero__blobs {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .page-hero__inner { position: relative; }
+  .page-hero__inner--photo { display: grid; gap: var(--space-8); align-items: center; }
+  .page-hero__inner :global(.page-hero__photo) { width: min(100%, 420px); justify-self: center; }
+  @media (min-width: 900px) {
+    .page-hero__inner--photo { grid-template-columns: minmax(0, 1fr) minmax(280px, 400px); }
+    .page-hero__inner :global(.page-hero__photo) { justify-self: end; }
+  }
+  .page-hero__eyebrow {
+    display: inline-block;
+    margin: var(--space-2) 0 var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+    color: var(--brand-ink);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  .page-hero--pink .page-hero__eyebrow { border-color: var(--accent-soft); color: var(--accent-ink); }
+  .page-hero__title {
+    margin: var(--space-2) 0 var(--space-3);
+    max-width: 24ch;
+    animation: ph-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .page-hero__title::after {
+    content: '';
+    display: block;
+    width: 72px;
+    height: 6px;
+    margin-top: var(--space-3);
+    border-radius: var(--radius-pill);
+    background: linear-gradient(90deg, var(--accent-strong), var(--accent));
+    transform-origin: left center;
+    animation: ph-grow 0.8s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .page-hero--pink .page-hero__title::after { background: linear-gradient(90deg, var(--brand), var(--apple)); }
+  .page-hero__lead {
+    max-width: 60ch;
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-lg);
+    animation: ph-rise 0.7s 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .page-hero__wave {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    width: 100%;
+    height: 32px;
+    fill: var(--surface);
+  }
+
+  .blob { transform-box: fill-box; transform-origin: center; }
+  .blob--a { animation: ph-drift 14s ease-in-out infinite; }
+  .blob--b { animation: ph-drift 17s ease-in-out -4s infinite reverse; }
+  .blob--c { animation: float 6s ease-in-out infinite; }
+  .blob--d { animation: float 7s ease-in-out -2s infinite; }
+  .blob--e { animation: shimmer 3.5s ease-in-out infinite alternate; }
+
+  @keyframes ph-rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes ph-grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes ph-drift {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-14px, 10px) rotate(6deg); }
+  }
+
+  .page-body { padding-top: var(--space-8); padding-bottom: var(--space-16); }
+  .page-body--narrow { max-width: 50rem; }
+
+  @media (min-width: 768px) {
+    .page-hero { padding: var(--space-6) 0 var(--space-16); }
+    .page-hero__wave { height: 48px; }
+  }
+</style>

@@ -22,8 +22,8 @@
   --focus: #c9303a;
 
   /* Type */
-  --font-heading: 'Baloo 2', system-ui, sans-serif;
-  --font-body: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-heading: 'Baloo 2', 'Baloo 2 Fallback', system-ui, sans-serif;
+  --font-body: 'Be Vietnam Pro', 'Be Vietnam Pro Fallback', system-ui, sans-serif;
   --text-sm: 0.9375rem;
   --text-base: 1.0625rem; /* 17px body */
   --text-lg: 1.25rem;
@@ -54,4 +54,25 @@
   --tap: 48px; /* minimum tap target */
   --content: 72rem;
   --shadow: 0 6px 24px rgb(59 74 0 / 0.1);
+}
+
+/* Metric-matched fallbacks: while the brand fonts load, text is drawn in local
+   Arial/Roboto resized to the same width and line box, so the swap does not move
+   the layout (CLS). Numbers measured with fontkit against Arial-metric fonts. */
+@font-face {
+  font-family: 'Be Vietnam Pro Fallback';
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Roboto');
+  size-adjust: 107.63%;
+  ascent-override: 92.91%;
+  descent-override: 24.62%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Baloo 2 Fallback';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Roboto Bold');
+  font-weight: 600 700;
+  size-adjust: 92.37%;
+  ascent-override: 116.70%;
+  descent-override: 56.73%;
+  line-gap-override: 0%;
 }

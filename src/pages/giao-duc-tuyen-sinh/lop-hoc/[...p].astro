@@ -1,9 +1,33 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Các lớp học (WEB-09): 3 · 4 · 5 tuổi from data/classes.json (owner-defined rows).
+// Hidden until the file holds real values (no TODO-OWNER).
 import PageLayout from '../../../layouts/PageLayout.astro';
-import { onlyIf } from '../../../lib/nav';
+import ClassCard from '../../../components/ClassCard.astro';
+import { onlyIf, isVisible } from '../../../lib/nav';
+import classesRaw from '../../../data/classes.json';
+import { classKey } from '../../../lib/photos';
 export const getStaticPaths = () => onlyIf('/giao-duc-tuyen-sinh/lop-hoc/');
+
+type Row = { ageGroup: string; className: string; teacherName: string; schedule: string; capacity: string; fee?: string };
+const rows = (Array.isArray(classesRaw) ? (classesRaw as unknown[]) : [])
+  .filter((r): r is Row => !!r && typeof r === 'object' && !JSON.stringify(r).includes('TODO-OWNER'))
+  .filter((r) => r.ageGroup && r.className && r.teacherName && r.schedule && r.capacity);
+const cta = (await isVisible('/giao-duc-tuyen-sinh/dang-ky/')) ? '/giao-duc-tuyen-sinh/dang-ky/' : '/lien-he/';
+const accents = ['brand', 'accent', 'apple'] as const;
 ---
-<PageLayout title="Các lớp học">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Các lớp học" eyebrow="Giáo dục – Tuyển sinh" lead="Lớp học theo độ tuổi, sĩ số nhỏ để cô quan tâm từng bé.">
+  <h2 class="sr-only">Danh sách lớp học</h2>
+  <ul class="classes" role="list">
+    {rows.map((c, i) => (
+      <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+        <ClassCard {...c} ctaHref={cta} accentVariant={accents[i % 3]} classPhotoKey={classKey(c.className)} />
+      </li>
+    ))}
+  </ul>
 </PageLayout>
+
+<style>
+  .classes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); }
+  @media (min-width: 700px) { .classes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .classes { grid-template-columns: repeat(3, 1fr); } }
+</style>

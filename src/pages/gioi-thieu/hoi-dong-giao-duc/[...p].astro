@@ -1,9 +1,22 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Hội đồng giáo dục (WEB-09). Approved rows only, ordered by `order`; photos only with photo_consent.
 import PageLayout from '../../../layouts/PageLayout.astro';
+import TeacherCard from '../../../components/TeacherCard.astro';
 import { onlyIf } from '../../../lib/nav';
+import { getPublished } from '../../../lib/published';
 export const getStaticPaths = () => onlyIf('/gioi-thieu/hoi-dong-giao-duc/');
+
+const people = (await getPublished('council')).map((p) => p.data).sort((a, b) => a.order - b.order);
 ---
-<PageLayout title="Hội đồng giáo dục">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Hội đồng giáo dục" eyebrow="Giới thiệu" lead="Ban giám hiệu và hội đồng chuyên môn của nhà trường.">
+  <h2 class="sr-only">Thành viên hội đồng</h2>
+  <ul class="people" role="list">
+    {people.map((p, i) => (
+      <li data-reveal style={`--reveal-delay: ${(i % 4) * 80}ms;`}><TeacherCard teacher={p} /></li>
+    ))}
+  </ul>
 </PageLayout>
+
+<style>
+  .people { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
+</style>

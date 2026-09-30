@@ -1,13 +1,16 @@
 ---
-// PartnerStrip component (WEB-07b). For homepage "Đơn vị đồng hành" section (§6.6 #12).
-// Logos ≤ 20 KB each, alt = partner name. Hidden until data exists.
-// Grayscale logos with hover color reveal. Mobile: horizontal scroll.
+// PartnerStrip component (restyle-B). For homepage "Đơn vị đồng hành".
+// Hidden until data exists (dev preview can pass demo partners).
+// Mobile: horizontal scroll-snap; desktop: centred row.
 import { Image } from 'astro:assets';
 import partnersData from '../data/partners.json';
 
 interface Partner {
   name: string;
-  logo: string; // path to logo in assets
+  /** Logo path (public/) for owner-provided logos */
+  logo?: string;
+  /** Bundled logo (dev preview) */
+  image?: ImageMetadata;
   url?: string;
   alt?: string;
 }
@@ -24,13 +27,16 @@ interface Props {
 }
 
 const { partners: overridePartners, heading, subheading, eyebrow } = Astro.props;
-const partners = (overridePartners || partnersData) as Partner[];
+const hasOwnerMarker = (v: unknown): boolean =>
+  typeof v === 'string' ? v.includes('TODO-OWNER') : JSON.stringify(v).includes('TODO-OWNER');
+const clean = (list: Partner[]): Partner[] =>
+  list.filter((p) => p && p.name && (p.logo || p.image) && !hasOwnerMarker(p));
+const partners = clean((overridePartners || partnersData) as Partner[]);
 const showComponent = partners.length > 0;
 ---
 
 {showComponent ? (
-<>
-  <section class="partner-strip" aria-labelledby={heading ? 'partners-heading' : undefined}>
+  <section class="partner-strip" aria-labelledby={heading ? 'partners-heading' : undefined} data-reveal>
     <div class="container">
       {(heading || subheading || eyebrow) && (
         <header class="partner-strip__header">
@@ -39,25 +45,35 @@ const showComponent = partners.length > 0;
           {subheading && <p class="partner-strip__subheading">{subheading}</p>}
         </header>
       )}
-      <div class="partner-strip__scroller" role="list" aria-label="Đối tác đồng hành">
-        {partners.map(partner => (
+      <div class="partner-strip__scroller" role="list" aria-label="Đơn vị đồng hành">
+        {partners.map((partner) => (
           <div class="partner-strip__item" role="listitem">
             {partner.url ? (
               <a href={partner.url} target="_blank" rel="noopener noreferrer" class="partner-strip__link" aria-label={partner.alt || partner.name}>
-                <Image src={partner.logo} alt={partner.alt || partner.name} loading="lazy" width={160} height={80} />
+                {partner.image ? (
+                  <Image src={partner.image} alt={partner.alt || partner.name} loading="lazy" width={220} height={80} />
+                ) : (
+                  <img src={partner.logo} alt={partner.alt || partner.name} loading="lazy" width={220} height={80} />
+                )}
               </a>
             ) : (
-              <Image src={partner.logo} alt={partner.alt || partner.name} loading="lazy" width={160} height={80} />
+              <span class="partner-strip__static">
+                {partner.image ? (
+                  <Image src={partner.image} alt={partner.alt || partner.name} loading="lazy" width={220} height={80} />
+                ) : (
+                  <img src={partner.logo} alt={partner.alt || partner.name} loading="lazy" width={220} height={80} />
+                )}
+              </span>
             )}
           </div>
         ))}
       </div>
     </div>
   </section>
-</>
 ) : null}
 
 <style>
+  .partner-strip { padding: var(--space-12) 0; }
   .partner-strip__header { margin-bottom: var(--space-8); text-align: center; }
   .partner-strip__eyebrow {
     display: inline-block;
@@ -66,18 +82,19 @@ const showComponent = partners.length > 0;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--brand);
-    background: var(--brand-tint);
+    color: var(--brand-ink);
+    background: #fff;
+    border: 1px solid var(--brand-tint);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
-    margin-bottom: var(--space-3);
+    margin: 0 0 var(--space-3);
   }
   .partner-strip__heading {
     font-family: var(--font-heading);
     font-size: var(--text-2xl);
     font-weight: 700;
     color: var(--brand-ink);
-    margin-bottom: var(--space-2);
+    margin: 0 0 var(--space-2);
   }
   .partner-strip__subheading {
     font-size: var(--text-base);
@@ -87,57 +104,67 @@ const showComponent = partners.length > 0;
   }
 
   .partner-strip__scroller {
-    display: flex;
-    gap: var(--space-6);
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: min(200px, 62vw);
+    gap: var(--space-5);
+    justify-content: start;
     overflow-x: auto;
-    padding: var(--space-2) 0 var(--space-4);
+    padding: var(--space-2) var(--space-1) var(--space-4);
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-  }
-  .partner-strip__scroller::-webkit-scrollbar { display: none; }
-  .partner-strip__scroller { scrollbar-width: none; }
-
-  .partner-strip__item {
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-    width: 160px;
+    scrollbar-width: thin;
   }
   @media (min-width: 768px) {
-    .partner-strip__scroller {
-      justify-content: center;
-      overflow-x: visible;
-    }
-    .partner-strip__item { width: auto; }
+    .partner-strip__scroller { justify-content: center; }
   }
 
+  .partner-strip__item {
+    scroll-snap-align: start;
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+    border-radius: 20px;
+    padding: var(--space-4) var(--space-5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 110px;
+    box-shadow: 0 2px 10px rgb(59 74 0 / 0.06);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .partner-strip__item:hover { box-shadow: var(--shadow); transform: translateY(-3px); }
+
   .partner-strip__link {
-    display: block;
-    filter: grayscale(1) opacity(0.6);
-    transition: filter 0.3s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap);
+    min-width: var(--tap);
+    filter: grayscale(1) opacity(0.75);
+    transition: filter 0.3s ease;
   }
   .partner-strip__link:hover,
-  .partner-strip__link:focus-visible {
-    filter: grayscale(0) opacity(1);
-    transform: scale(1.05);
-  }
+  .partner-strip__link:focus-visible { filter: grayscale(0) opacity(1); }
   .partner-strip__link:focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: 4px;
     border-radius: var(--radius-sm);
   }
-
-  .partner-strip__item:not(:has(a)) img {
-    filter: grayscale(1) opacity(0.6);
+  .partner-strip__static {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .partner-strip__item img {
     width: 100%;
     height: auto;
-    max-height: 60px;
+    max-height: 64px;
     object-fit: contain;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .partner-strip__link { transition: none; }
+    .partner-strip__link, .partner-strip__item { transition: none; }
+    .partner-strip__item:hover { transform: none; }
   }
 </style>

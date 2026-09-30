@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Ảnh minh hoạ">
+  <title>Ảnh minh hoạ</title>
+  <defs>
+    <linearGradient id="demoAlbum2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f3f6e4"/>
+      <stop offset="1" stop-color="#ffedec"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#demoAlbum2)"/>
+  <g opacity="0.55">
+    <rect x="150" y="150" width="220" height="170" rx="24" fill="none" stroke="#c9303a" stroke-width="7"/>
+    <rect x="430" y="150" width="220" height="170" rx="24" fill="none" stroke="#536501" stroke-width="7"/>
+    <rect x="290" y="350" width="220" height="170" rx="24" fill="none" stroke="#8e9c21" stroke-width="7"/>
+  </g>
+  <circle cx="680" cy="470" r="85" fill="#536501" opacity="0.14"/>
+  <text x="400" y="100" text-anchor="middle" font-family="sans-serif" font-size="44" font-weight="700" fill="#a3212c">Ảnh minh hoạ</text>
+</svg>

@@ -1,10 +1,14 @@
 ---
 // Text pages from the `pages` collection (Google Docs via DS). Only approved pages
-// on the allow-list in lib/nav.ts are generated (section 6.3).
+// on the allow-list in lib/nav.ts are generated (section 6.3). Parent pages
+// (Giới thiệu, Giáo dục – Tuyển sinh) also list their visible child pages.
 import { render } from 'astro:content';
 import PageLayout from '../layouts/PageLayout.astro';
+import Prose from '../components/Prose.astro';
+import FacilityGallery from '../components/FacilityGallery.astro';
 import { getPublished } from '../lib/published';
-import { PAGE_ROUTES } from '../lib/nav';
+import { PAGE_ROUTES, buildNav } from '../lib/nav';
+import { formatVnDate, parseVnDate } from '../lib/dates';
 
 export async function getStaticPaths() {
   const allowed = new Set<string>(PAGE_ROUTES);
@@ -16,7 +20,46 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+const here = Astro.url.pathname;
+const children = (await buildNav()).find((n) => n.href === here || n.children?.[0]?.href === here)
+  ?.children?.filter((c) => c.href !== here) ?? [];
+const isParent = here.split('/').filter(Boolean).length === 1;
+const synced = entry.data.synced_at ? parseVnDate(entry.data.synced_at.slice(0, 10)) : null;
 ---
-<PageLayout title={entry.data.title} description={entry.data.description}>
-  <Content />
+<PageLayout title={entry.data.title} description={entry.data.description} lead={entry.data.description} narrow={!isParent}>
+  <Prose><Content /></Prose>
+  {here === '/gioi-thieu/' && <FacilityGallery limit={6} heading="Cơ sở vật chất" />}
+  {isParent && children.length > 0 && (
+    <ul class="kids" role="list">
+      {children.map((c, i) => (
+        <li data-reveal style={`--reveal-delay: ${(i % 3) * 80}ms;`}><a href={c.href}>{c.label}<span aria-hidden="true">→</span></a></li>
+      ))}
+    </ul>
+  )}
+  {synced && <p class="updated">Cập nhật: {formatVnDate(synced)}</p>}
 </PageLayout>
+
+<style>
+  .kids { list-style: none; padding: 0; margin: var(--space-10) 0 0; display: grid; gap: var(--space-4); }
+  @media (min-width: 700px) { .kids { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .kids { grid-template-columns: repeat(3, 1fr); } }
+  .kids a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 64px;
+    padding: var(--space-4) var(--space-5);
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+    border-left: 6px solid var(--apple);
+    color: var(--brand-ink);
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .kids li:nth-child(even) a { border-left-color: var(--accent); }
+  .kids a:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .updated { margin-top: var(--space-10); font-size: var(--text-sm); color: var(--muted); }
+</style>

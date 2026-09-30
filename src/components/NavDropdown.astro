@@ -1,7 +1,8 @@
 ---
-// NavDropdown component (WEB-07a). Accessible dropdown menu for desktop nav.
-// Uses :hover/:focus-within for zero-JS desktop, enhanced with minimal JS for touch.
-// Expects parent <li class="has-sub"> wrapper.
+// NavDropdown (restyle-A). Accessible dropdown for the white desktop nav.
+// Zero-JS open via :hover/:focus-within. Must sit inside <ul class="menu">;
+// the parent trigger keeps the animated green underline of plain nav links.
+// Expects parent <li class="has-sub"> wrapper (rendered here).
 interface NavItem {
   label: string;
   href: string;
@@ -23,9 +24,9 @@ const { trigger, items, triggerHref = '#', triggerCurrent } = Astro.props;
 ---
 
 <li class="nav-dropdown has-sub">
-  <a href={triggerHref} aria-current={triggerCurrent ? 'page' : undefined} class="nav-dropdown__trigger">
+  <a href={triggerHref} aria-current={triggerCurrent ? 'page' : undefined} aria-haspopup="true" class="nav-dropdown__trigger">
     {trigger}
-    <svg class="nav-dropdown__arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+    <svg class="nav-dropdown__arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="16" height="16" focusable="false">
       <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
   </a>
@@ -43,22 +44,44 @@ const { trigger, items, triggerHref = '#', triggerCurrent } = Astro.props;
 <style>
   .nav-dropdown { position: relative; }
   .nav-dropdown__trigger {
-    display: flex;
+    position: relative;
+    display: inline-flex;
     align-items: center;
     gap: var(--space-1);
     min-height: var(--tap);
-    padding: 0 var(--space-3);
-    color: #fff;
+    padding: 0 var(--space-1);
+    color: var(--brand-ink);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     font-size: var(--text-sm);
+    white-space: nowrap;
   }
+  .nav-dropdown__trigger::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 8px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--brand);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.25s ease;
+  }
+  .nav-dropdown__trigger:hover::after,
+  .nav-dropdown__trigger:focus-visible::after,
+  .nav-dropdown__trigger[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+  .nav-dropdown__trigger[aria-current='page'] { color: var(--brand); }
+  @media (max-width: 1320px) { .nav-dropdown__trigger { font-size: 0.9rem; } }
   .nav-dropdown__arrow {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
     transition: transform 0.2s ease;
-    color: var(--brand-tint);
+    color: var(--brand);
   }
   .has-sub:hover > .nav-dropdown__trigger .nav-dropdown__arrow,
   .has-sub:focus-within > .nav-dropdown__trigger .nav-dropdown__arrow {
@@ -69,38 +92,41 @@ const { trigger, items, triggerHref = '#', triggerCurrent } = Astro.props;
     display: none;
     position: absolute;
     top: 100%;
-    left: 0;
-    min-width: 16rem;
-    padding: var(--space-2) 0;
+    left: calc(-1 * var(--space-4));
+    min-width: 17rem;
+    padding: var(--space-2);
     margin: 0;
     list-style: none;
-    background: var(--brand-ink);
-    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow);
-    z-index: 50;
+    z-index: 60;
   }
   .has-sub:hover > .nav-dropdown__panel,
   .has-sub:focus-within > .nav-dropdown__panel {
     display: block;
   }
 
-  .nav-dropdown__item a {
-    display: block;
-    padding: var(--space-2) var(--space-4);
-    color: #fff;
+  .nav-dropdown__item {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
     text-decoration: none;
-    font-weight: 400;
-    font-size: var(--text-sm);
-    white-space: nowrap;
-    transition: background-color 0.15s ease;
+    font-weight: 500;
+    font-size: var(--text-base);
+    transition: background-color 0.15s ease, color 0.15s ease;
   }
-  .nav-dropdown__item a:hover,
-  .nav-dropdown__item a[aria-current='page'] {
-    background: var(--brand);
-    color: #fff;
+  .nav-dropdown__item:hover,
+  .nav-dropdown__item[aria-current='page'] {
+    background: var(--brand-soft);
+    color: var(--brand-ink);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .nav-dropdown__arrow, .nav-dropdown__item a { transition: none; }
+    .nav-dropdown__trigger::after, .nav-dropdown__arrow, .nav-dropdown__item { transition: none; }
   }
 </style>

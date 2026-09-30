@@ -1,0 +1,7 @@
+# Path moves only (section 7.5). Host redirects (www, pages.dev, alias domains) are
+# Cloudflare Redirect Rules, not this file.
+/hoc-phi/            /chinh-sach-hoc-phi/   301
+/tuyen-sinh/         /giao-duc-tuyen-sinh/  301
+/thuc-don/           /giao-duc-tuyen-sinh/thuc-don/  301
+/lien-he.html        /lien-he/              301
+/rss                 /rss.xml               301

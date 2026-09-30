@@ -1,9 +1,51 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Kế hoạch giáo dục tháng/tuần (WEB-09). Hidden until >= 1 approved plan.
 import PageLayout from '../../../layouts/PageLayout.astro';
 import { onlyIf } from '../../../lib/nav';
+import { getPublished } from '../../../lib/published';
 export const getStaticPaths = () => onlyIf('/giao-duc-tuyen-sinh/ke-hoach/');
+
+const plans = (await getPublished('plans')).map((p) => p.data);
+const groups = [
+  { kind: 'thang', label: 'Kế hoạch tháng' },
+  { kind: 'tuan', label: 'Kế hoạch tuần' },
+].map((g) => ({ ...g, items: plans.filter((p) => p.kind === g.kind).sort((a, b) => b.period.localeCompare(a.period)) }))
+ .filter((g) => g.items.length > 0);
+// Only link files that live on this site (published by n8n under /cong-khai/ or /ke-hoach/).
+const safeFile = (f?: string) => (f && f.startsWith('/') && !f.startsWith('//') ? f : undefined);
 ---
-<PageLayout title="Kế hoạch giáo dục">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Kế hoạch giáo dục" lead="Nội dung học tập và hoạt động của bé theo tháng và theo tuần.">
+  {groups.map((g) => (
+    <section class="plan-group" aria-labelledby={`kh-${g.kind}`}>
+      <h2 id={`kh-${g.kind}`}>{g.label}</h2>
+      <ul class="plans" role="list">
+        {g.items.map((p, i) => (
+          <li class="plan" data-reveal style={`--reveal-delay: ${(i % 3) * 80}ms;`}>
+            <p class="plan__period">{p.period}</p>
+            <h3 class="plan__title">{p.title}</h3>
+            <p class="plan__summary">{p.summary}</p>
+            {safeFile(p.file) && <a class="plan__file" href={safeFile(p.file)}>Xem tài liệu</a>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
 </PageLayout>
+
+<style>
+  .plan-group + .plan-group { margin-top: var(--space-12); }
+  .plans { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); }
+  @media (min-width: 800px) { .plans { grid-template-columns: repeat(2, 1fr); } }
+  .plan {
+    padding: var(--space-5);
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+    border-top: 6px solid var(--apple);
+    box-shadow: 0 2px 10px rgb(59 74 0 / 0.06);
+  }
+  .plan__period { margin: 0 0 var(--space-1); font-size: var(--text-sm); font-weight: 600; color: var(--accent-ink); }
+  .plan__title { margin-bottom: var(--space-2); }
+  .plan__summary { margin-bottom: var(--space-3); }
+  .plan__file { font-weight: 600; }
+</style>

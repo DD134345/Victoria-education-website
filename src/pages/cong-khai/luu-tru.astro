@@ -1,14 +1,15 @@
 ---
-// Superseded disclosure items are listed only here (kept >= 5 years).
+// Lưu trữ công khai (WEB-11): every superseded item, grouped, newest update first,
+// never deleted (>= 5 years).
 import PageLayout from '../../layouts/PageLayout.astro';
-import { getPublished } from '../../lib/published';
-
-const items = (await getPublished('disclosure')).filter((d) => !!d.data.superseded_by);
+import DisclosureArchive from '../../components/DisclosureArchive.astro';
 ---
-<PageLayout title="Lưu trữ công khai">
-  {items.length === 0 ? (
-    <p>Chưa có tài liệu lưu trữ.</p>
-  ) : (
-    <ul>{items.map((d) => <li>{d.data.title} ({d.data.school_year})</li>)}</ul>
-  )}
+<PageLayout title="Lưu trữ công khai" eyebrow="Công khai"
+  lead="Các thông tin công khai đã được thay thế, lưu giữ tối thiểu 5 năm theo quy định.">
+  <DisclosureArchive bare />
+  <p class="back"><a class="btn btn--outline" href="/cong-khai/">← Tất cả mục công khai</a></p>
 </PageLayout>
+
+<style>
+  .back { margin-top: var(--space-10); }
+</style>

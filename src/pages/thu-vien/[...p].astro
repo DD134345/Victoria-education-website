@@ -1,9 +1,41 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Thư viện ảnh (WEB-09): category chips + all albums. Hidden until >= 1 album.
 import PageLayout from '../../layouts/PageLayout.astro';
-import { onlyIf } from '../../lib/nav';
+import AlbumList from '../../components/AlbumList.astro';
+import FacilityGallery from '../../components/FacilityGallery.astro';
+import { onlyIf, isVisible } from '../../lib/nav';
+import { ALBUM_CATEGORIES } from '../../lib/entries';
 export const getStaticPaths = () => onlyIf('/thu-vien/');
+
+const chips = [];
+for (const [slug, label] of Object.entries(ALBUM_CATEGORIES)) {
+  if (await isVisible(`/thu-vien/${slug}/`)) chips.push({ href: `/thu-vien/${slug}/`, label });
+}
 ---
-<PageLayout title="Thư viện ảnh">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Thư viện ảnh" lead="Không gian học tập và những khoảnh khắc đáng nhớ tại trường.">
+  {chips.length > 1 && (
+    <nav class="chips" aria-label="Chủ đề ảnh">
+      {chips.map((c) => <a class="chip" href={c.href}>{c.label}</a>)}
+    </nav>
+  )}
+  <FacilityGallery limit={6} heading="Cơ sở vật chất" />
+  <AlbumList />
 </PageLayout>
+
+<style>
+  .chips { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-10); }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 0 var(--space-5);
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    border: 2px solid var(--brand-tint);
+    color: var(--brand-ink);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .chip:hover { border-color: var(--brand); transform: translateY(-2px); }
+</style>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="160" viewBox="0 0 440 160" role="img" aria-label="Ảnh minh hoạ">
+  <title>Ảnh minh hoạ</title>
+  <defs>
+    <linearGradient id="demoPartner1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f3f6e4"/>
+      <stop offset="1" stop-color="#e3ebc4"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="432" height="152" rx="28" fill="url(#demoPartner1)" stroke="#536501" stroke-width="3" opacity="1"/>
+  <g fill="none" stroke="#536501" stroke-width="5" stroke-linecap="round">
+    <path d="M70 100 C 85 70 120 66 138 88 C 120 108 88 112 70 100 Z"/>
+  </g>
+  <text x="250" y="92" text-anchor="middle" font-family="sans-serif" font-size="30" font-weight="700" fill="#3b4a00">Ảnh minh hoạ</text>
+</svg>

@@ -1,7 +1,7 @@
 ---
-// TestimonialTabs component (WEB-07b). For "Phụ huynh nói gì" section (§6.6 #10).
+// TestimonialTabs component (restyle-B). Tab pills (Phụ huynh / Giáo viên),
+// round photo overlapping the top of a green card with white text.
 // Accessible tablist (ARIA). Works without JS as stacked lists.
-// Tabs: "Phụ huynh" / "Giáo viên". Hidden until ≥ 2 testimonials per tab.
 interface Testimonial {
   author_label: string;
   content: string;
@@ -27,11 +27,11 @@ const { parents, teachers, heading, subheading, eyebrow } = Astro.props;
 const hasParents = parents.length >= 2;
 const hasTeachers = teachers.length >= 2;
 const showComponent = hasParents || hasTeachers;
+const instanceId = `t-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
 {showComponent ? (
-<>
-  <section class="testimonial-tabs" aria-labelledby={heading ? 'testimonials-heading' : undefined}>
+  <section class="testimonial-tabs" aria-labelledby={heading ? 'testimonials-heading' : undefined} data-testimonials={instanceId}>
     <div class="container">
       {(heading || eyebrow) && (
         <header class="testimonial-tabs__header">
@@ -45,11 +45,12 @@ const showComponent = hasParents || hasTeachers;
         {hasParents && (
           <button
             role="tab"
-            id="tab-parents"
-            aria-controls="panel-parents"
+            id={`${instanceId}-tab-parents`}
+            aria-controls={`${instanceId}-panel-parents`}
             aria-selected="true"
             class="testimonial-tabs__tab testimonial-tabs__tab--active"
-            data-panel="panel-parents"
+            data-panel={`${instanceId}-panel-parents`}
+            type="button"
           >
             Phụ huynh
           </button>
@@ -57,11 +58,12 @@ const showComponent = hasParents || hasTeachers;
         {hasTeachers && (
           <button
             role="tab"
-            id="tab-teachers"
-            aria-controls="panel-teachers"
-            aria-selected="false"
-            class="testimonial-tabs__tab"
-            data-panel="panel-teachers"
+            id={`${instanceId}-tab-teachers`}
+            aria-controls={`${instanceId}-panel-teachers`}
+            aria-selected={hasParents ? 'false' : 'true'}
+            class={`testimonial-tabs__tab${hasParents ? '' : ' testimonial-tabs__tab--active'}`}
+            data-panel={`${instanceId}-panel-teachers`}
+            type="button"
           >
             Giáo viên
           </button>
@@ -71,24 +73,23 @@ const showComponent = hasParents || hasTeachers;
       {hasParents && (
         <div
           role="tabpanel"
-          id="panel-parents"
-          aria-labelledby="tab-parents"
+          id={`${instanceId}-panel-parents`}
+          aria-labelledby={`${instanceId}-tab-parents`}
           class="testimonial-tabs__panel testimonial-tabs__panel--active"
+          tabindex="0"
         >
           <ul class="testimonial-tabs__list">
-            {parents.map(t => (
-              <li class="testimonial-card">
+            {parents.map((t, i) => (
+              <li class="testimonial-card" data-reveal style={`--reveal-delay: ${(i % 2) * 110}ms;`}>
+                {t.avatar && (
+                  <img class="testimonial-card__avatar" src={t.avatar} alt="" loading="lazy" width={76} height={76} />
+                )}
                 <blockquote class="testimonial-card__quote">
                   <p>{t.content}</p>
                 </blockquote>
                 <footer class="testimonial-card__footer">
-                  {t.avatar && (
-                    <img class="testimonial-card__avatar" src={t.avatar} alt="" loading="lazy" width={48} height={48} />
-                  )}
-                  <div class="testimonial-card__author">
-                    <cite class="testimonial-card__name">{t.author_label}</cite>
-                    {t.role && <span class="testimonial-card__role">{t.role}</span>}
-                  </div>
+                  <cite class="testimonial-card__name">{t.author_label}</cite>
+                  {t.role && <span class="testimonial-card__role">{t.role}</span>}
                 </footer>
               </li>
             ))}
@@ -99,24 +100,24 @@ const showComponent = hasParents || hasTeachers;
       {hasTeachers && (
         <div
           role="tabpanel"
-          id="panel-teachers"
-          aria-labelledby="tab-teachers"
-          class="testimonial-tabs__panel"
+          id={`${instanceId}-panel-teachers`}
+          aria-labelledby={`${instanceId}-tab-teachers`}
+          class={`testimonial-tabs__panel${hasParents ? '' : ' testimonial-tabs__panel--active'}`}
+          hidden={hasParents}
+          tabindex="0"
         >
           <ul class="testimonial-tabs__list">
-            {teachers.map(t => (
-              <li class="testimonial-card">
+            {teachers.map((t) => (
+              <li class="testimonial-card testimonial-card--pink">
+                {t.avatar && (
+                  <img class="testimonial-card__avatar" src={t.avatar} alt="" loading="lazy" width={76} height={76} />
+                )}
                 <blockquote class="testimonial-card__quote">
                   <p>{t.content}</p>
                 </blockquote>
                 <footer class="testimonial-card__footer">
-                  {t.avatar && (
-                    <img class="testimonial-card__avatar" src={t.avatar} alt="" loading="lazy" width={48} height={48} />
-                  )}
-                  <div class="testimonial-card__author">
-                    <cite class="testimonial-card__name">{t.author_label}</cite>
-                    {t.role && <span class="testimonial-card__role">{t.role}</span>}
-                  </div>
+                  <cite class="testimonial-card__name">{t.author_label}</cite>
+                  {t.role && <span class="testimonial-card__role">{t.role}</span>}
                 </footer>
               </li>
             ))}
@@ -125,57 +126,58 @@ const showComponent = hasParents || hasTeachers;
       )}
     </div>
   </section>
-</>
 ) : null}
 
-<script is:inline>
-  // Vanilla JS for tab switching (progressive enhancement)
-  const tablist = document.querySelector('.testimonial-tabs__tablist');
-  if (tablist) {
-    const tabs = tablist.querySelectorAll('[role="tab"]');
-    const panels = document.querySelectorAll('.testimonial-tabs__panel');
-    
-    // Initially hide all but the first panel
-    panels.forEach((panel, i) => {
-      if (i > 0) panel.hidden = true;
+<script is:inline define:vars={{ instanceId }}>
+  // Vanilla JS for tab switching (progressive enhancement, scoped per instance).
+  (function () {
+    var section = document.querySelector('[data-testimonials="' + instanceId + '"]');
+    if (!section) return;
+    var tablist = section.querySelector('.testimonial-tabs__tablist');
+    if (!tablist) return;
+    var tabs = Array.prototype.slice.call(tablist.querySelectorAll('[role="tab"]'));
+    var panels = Array.prototype.slice.call(section.querySelectorAll('.testimonial-tabs__panel'));
+
+    // Initially hide all but the active panel.
+    panels.forEach(function (panel) {
+      if (!panel.classList.contains('testimonial-tabs__panel--active')) panel.hidden = true;
     });
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const panelId = tab.getAttribute('data-panel');
-        tabs.forEach(t => {
-          t.classList.remove('testimonial-tabs__tab--active');
-          t.setAttribute('aria-selected', 'false');
-        });
-        tab.classList.add('testimonial-tabs__tab--active');
-        tab.setAttribute('aria-selected', 'true');
-
-        panels.forEach(panel => {
-          panel.hidden = true;
-          panel.classList.remove('testimonial-tabs__panel--active');
-        });
-        const activePanel = document.getElementById(panelId);
-        if (activePanel) {
-          activePanel.hidden = false;
-          activePanel.classList.add('testimonial-tabs__panel--active');
-        }
+    function activate(tab, focus) {
+      var panelId = tab.getAttribute('data-panel');
+      tabs.forEach(function (t) {
+        t.classList.remove('testimonial-tabs__tab--active');
+        t.setAttribute('aria-selected', 'false');
+        t.tabIndex = -1;
       });
+      tab.classList.add('testimonial-tabs__tab--active');
+      tab.setAttribute('aria-selected', 'true');
+      tab.tabIndex = 0;
+      panels.forEach(function (panel) {
+        var on = panel.id === panelId;
+        panel.hidden = !on;
+        panel.classList.toggle('testimonial-tabs__panel--active', on);
+      });
+      if (focus) tab.focus();
+    }
 
-      // Keyboard navigation
-      tab.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-          e.preventDefault();
-          const index = Array.from(tabs).indexOf(tab);
-          const nextIndex = e.key === 'ArrowRight' ? (index + 1) % tabs.length : (index - 1 + tabs.length) % tabs.length;
-          tabs[nextIndex].click();
-          tabs[nextIndex].focus();
-        }
+    tabs.forEach(function (tab, index) {
+      tab.tabIndex = tab.classList.contains('testimonial-tabs__tab--active') ? 0 : -1;
+      tab.addEventListener('click', function () { activate(tab, false); });
+      tab.addEventListener('keydown', function (e) {
+        var next = null;
+        if (e.key === 'ArrowRight') next = tabs[(index + 1) % tabs.length];
+        else if (e.key === 'ArrowLeft') next = tabs[(index - 1 + tabs.length) % tabs.length];
+        else if (e.key === 'Home') next = tabs[0];
+        else if (e.key === 'End') next = tabs[tabs.length - 1];
+        if (next) { e.preventDefault(); activate(next, true); }
       });
     });
-  }
+  })();
 </script>
 
 <style>
+  .testimonial-tabs { padding: var(--space-12) 0; }
   .testimonial-tabs__header { margin-bottom: var(--space-8); text-align: center; }
   .testimonial-tabs__eyebrow {
     display: inline-block;
@@ -184,18 +186,19 @@ const showComponent = hasParents || hasTeachers;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--brand);
-    background: var(--brand-tint);
+    color: var(--brand-ink);
+    background: #fff;
+    border: 1px solid var(--brand-tint);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
-    margin-bottom: var(--space-3);
+    margin: 0 0 var(--space-3);
   }
   .testimonial-tabs__heading {
     font-family: var(--font-heading);
     font-size: var(--text-2xl);
     font-weight: 700;
     color: var(--brand-ink);
-    margin-bottom: var(--space-2);
+    margin: 0 0 var(--space-2);
   }
   .testimonial-tabs__subheading {
     font-size: var(--text-base);
@@ -204,27 +207,27 @@ const showComponent = hasParents || hasTeachers;
     margin: 0 auto;
   }
 
-  <testimonial-tabs__tablist {
+  .testimonial-tabs__tablist {
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
     gap: var(--space-3);
-    margin-bottom: var(--space-8);
-    border-bottom: 2px solid var(--brand-tint);
-    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-10);
   }
   .testimonial-tabs__tab {
-    background: none;
-    border: none;
-    padding: var(--space-2) var(--space-4);
+    min-height: var(--tap);
+    padding: var(--space-2) var(--space-6);
+    background: #fff;
+    border: 2px solid var(--brand-tint);
     font-family: var(--font-body);
     font-size: var(--text-base);
     font-weight: 600;
-    color: var(--muted);
+    color: var(--brand-ink);
     cursor: pointer;
     border-radius: var(--radius-pill);
-    transition: color 0.2s ease, background-color 0.2s ease;
+    transition: color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
   }
-  .testimonial-tabs__tab:hover { color: var(--brand-ink); background: var(--brand-soft); }
+  .testimonial-tabs__tab:hover { border-color: var(--brand); transform: translateY(-2px); }
   .testimonial-tabs__tab:focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: 2px;
@@ -232,81 +235,88 @@ const showComponent = hasParents || hasTeachers;
   .testimonial-tabs__tab--active {
     color: #fff;
     background: var(--brand);
+    border-color: var(--brand);
   }
-  .testimonial-tabs__tab--active:hover { background: var(--brand-ink); }
+  .testimonial-tabs__tab--active:hover { background: var(--brand-ink); border-color: var(--brand-ink); color: #fff; }
 
   .testimonial-tabs__panel { display: block; }
   .testimonial-tabs__panel[hidden] { display: none; }
+  .testimonial-tabs__panel:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: var(--radius-lg); }
 
   .testimonial-tabs__list {
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: 40px 0 0;
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-6);
+    gap: var(--space-8) var(--space-6);
   }
   @media (min-width: 768px) { .testimonial-tabs__list { grid-template-columns: repeat(2, 1fr); } }
 
   .testimonial-card {
-    background: var(--surface);
-    border: 1px solid var(--brand-tint);
+    position: relative;
+    background: var(--brand);
     border-radius: var(--radius-lg);
-    padding: var(--space-6);
+    padding: 0 var(--space-6) var(--space-6);
     display: flex;
     flex-direction: column;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
-  .testimonial-card__quote {
-    margin: 0 0 var(--space-4);
-    flex: 1;
+  .testimonial-card:hover { transform: translateY(-4px); }
+  .testimonial-card--pink { background: var(--accent-strong); }
+  .testimonial-card__avatar {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #fff;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.2);
+    margin: -38px auto var(--space-4);
+    flex-shrink: 0;
+  }
+  .testimonial-card__quote { margin: 0 0 var(--space-4); flex: 1; }
+  .testimonial-card__quote::before {
+    content: '“';
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    line-height: 1;
+    color: rgb(255 255 255 / 0.65);
   }
   .testimonial-card__quote p {
     font-size: var(--text-base);
     line-height: var(--leading);
-    color: var(--ink);
-    font-style: italic;
-    margin: 0;
+    color: #fff;
+    margin: var(--space-2) 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .testimonial-card__footer {
     display: flex;
-    align-items: center;
-    gap: var(--space-3);
+    flex-direction: column;
+    gap: var(--space-1);
     padding-top: var(--space-4);
-    border-top: 1px solid var(--brand-tint);
+    border-top: 1px solid rgb(255 255 255 / 0.35);
   }
-  .testimonial-card__avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: var(--brand-soft);
-  }
-  .testimonial-card__author { display: flex; flex-direction: column; }
   .testimonial-card__name {
     font-family: var(--font-heading);
     font-size: var(--text-base);
     font-weight: 700;
-    color: var(--brand-ink);
+    color: #fff;
     font-style: normal;
   }
   .testimonial-card__role {
     font-size: var(--text-sm);
-    color: var(--muted);
-  }
-
-  /* No-JS fallback: show all panels stacked */
-  @media (scripting: none) {
-    .testimonial-tabs__tablist { display: none; }
-    .testimonial-tabs__panel { display: block; }
-  }
-
-  /* No-JS fallback: show all panels stacked (tabs hidden) */
-  @media (scripting: none) {
-    .testimonial-tabs__tablist { display: none; }
-    .testimonial-tabs__panel { display: block; }
+    color: rgb(255 255 255 / 0.9);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .testimonial-tabs__tab { transition: none; }
+    .testimonial-tabs__tab, .testimonial-card { transition: none; }
+    .testimonial-tabs__tab:hover, .testimonial-card:hover { transform: none; }
   }
 </style>

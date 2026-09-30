@@ -1,26 +1,44 @@
 ---
-// One page per disclosure group, always generated; shows "Đang cập nhật" when empty.
+// One Công khai group (WEB-11): always generated (legal presence matters). Each
+// item shows "Ngày công khai" + "Cập nhật lần cuối"; superseded items appear only
+// in /cong-khai/luu-tru/.
 import PageLayout from '../../layouts/PageLayout.astro';
-import { getPublished } from '../../lib/published';
+import DisclosureItem from '../../components/DisclosureItem.astro';
 import { DISCLOSURE_GROUPS } from '../../lib/nav';
+import { getCurrentDisclosures } from '../../lib/disclosure';
 
 export function getStaticPaths() {
   return DISCLOSURE_GROUPS.map((g) => ({ params: { group: g.slug }, props: { label: g.label } }));
 }
 const { group } = Astro.params;
 const { label } = Astro.props;
-const items = (await getPublished('disclosure')).filter(
-  (d) => d.data.group === group && !d.data.superseded_by,
-);
+const items = await getCurrentDisclosures(group);
 ---
-<PageLayout title={label}>
+<PageLayout title={label} eyebrow="Công khai" description={`Công khai: ${label}.`}>
   {items.length === 0 ? (
-    <p>Đang cập nhật.</p>
+    <p class="pending" data-reveal>Đang cập nhật. Nhà trường sẽ công bố nội dung này theo đúng thời hạn quy định.</p>
   ) : (
-    <ul>
-      {items.map((d) => (
-        <li>{d.data.title} (năm học {d.data.school_year}; công bố {d.data.published_at}; cập nhật {d.data.updated_at})</li>
+    <>
+    <h2 class="sr-only">Danh mục đang công khai</h2>
+    <ul class="items" role="list">
+      {items.map((d, i) => (
+        <li data-reveal style={`--reveal-delay: ${(i % 4) * 70}ms;`}><DisclosureItem entry={d} /></li>
       ))}
     </ul>
+    </>
   )}
+  <p class="back"><a class="btn btn--outline" href="/cong-khai/">← Tất cả mục công khai</a></p>
 </PageLayout>
+
+<style>
+  .items { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); max-width: 56rem; }
+  .pending {
+    padding: var(--space-6);
+    border-radius: 22px;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 600;
+    max-width: 56rem;
+  }
+  .back { margin-top: var(--space-10); }
+</style>

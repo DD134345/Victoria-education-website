@@ -3,6 +3,8 @@
 // Shows: age group, class name, teacher, schedule, capacity, CTA.
 // Crops teacher photo to 4:5 per spec §6.7. Mobile-first, soft rounded.
 import { Image } from 'astro:assets';
+import PhotoFrame from './PhotoFrame.astro';
+import { hasPhoto } from '../lib/photos';
 
 interface Props {
   /** Age group label, e.g. "3 tuổi", "4 tuổi", "5 tuổi" */
@@ -25,6 +27,8 @@ interface Props {
   ctaHref?: string;
   /** CTA label */
   ctaLabel?: string;
+  /** Photo slot for the class (src/assets/photos/lop-hoc/<class>.jpg) */
+  classPhotoKey?: string;
   /** Accent color variant for the age badge */
   accentVariant?: 'brand' | 'accent' | 'apple';
 }
@@ -41,7 +45,9 @@ const {
   ctaHref,
   ctaLabel = 'Đăng ký tham quan',
   accentVariant = 'brand',
+  classPhotoKey,
 } = Astro.props;
+const showClassPhoto = !!classPhotoKey && (hasPhoto(classPhotoKey) || import.meta.env.DEV);
 
 const accentMap = {
   brand: 'var(--brand)',
@@ -52,6 +58,10 @@ const accentColor = accentMap[accentVariant];
 ---
 
 <article class="class-card" style="--accent: {accentColor};">
+  {showClassPhoto && (
+    <PhotoFrame photoKey={classPhotoKey} alt={`Lớp ${className}`} shape="rounded" ratio="16 / 10" decorate={false}
+      tone={accentVariant === 'accent' ? 'pink' : 'green'} sizes="(min-width: 1024px) 33vw, 100vw" class="class-card__photo" />
+  )}
   <header class="class-card__header">
     <span class="class-card__age-badge">{ageGroup}</span>
     <h3 class="class-card__class-name">{className}</h3>
@@ -105,6 +115,7 @@ const accentColor = accentMap[accentVariant];
 </article>
 
 <style>
+  .class-card :global(.class-card__photo .pf__frame) { border-radius: 0; box-shadow: none; }
   .class-card {
     background: var(--surface);
     border: 1px solid var(--brand-tint);

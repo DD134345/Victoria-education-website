@@ -1,18 +1,113 @@
 ---
-// Always generated. Facts only from site-config.json; TODO-OWNER values are hidden,
-// never shown. No contact form here (hard rules R1, R4).
+// Liên hệ (WEB-09): always generated. Facts only from site-config.json; any
+// TODO-OWNER value is hidden. No contact form here (hard rules R1, R4).
 import PageLayout from '../../layouts/PageLayout.astro';
-import { site, isPlaceholder } from '../../lib/site';
+import sisterRaw from '../../data/sister-schools.json';
+import { site, isReal, addressText, hasStreetAddress, hoursText, telHref, mapsHref } from '../../lib/site';
 
-const show = (v: unknown) => typeof v === 'string' && v.trim() !== '' && !isPlaceholder(v);
-const tel = show(site.hotline) ? String(site.hotline).replace(/[^\d+]/g, '') : '';
+const zalo = isReal(site.zalo) && /^https:\/\//.test(site.zalo) ? site.zalo : '';
+const email = isReal(site.email) ? site.email : '';
+const fb = isReal(site.social?.facebook) ? site.social.facebook : '';
+const tiles = [
+  hasStreetAddress && { key: 'addr', label: 'Địa chỉ', value: addressText, href: mapsHref, cta: 'Chỉ đường' },
+  telHref && { key: 'tel', label: 'Hotline', value: site.hotline, href: telHref, cta: 'Gọi ngay' },
+  zalo && { key: 'zalo', label: 'Zalo', value: 'Nhắn tin qua Zalo OA', href: zalo, cta: 'Mở Zalo' },
+  email && { key: 'mail', label: 'Email', value: email, href: `mailto:${email}`, cta: 'Gửi email' },
+  hoursText && { key: 'hours', label: 'Giờ đón trả trẻ', value: `Thứ 2 – Thứ 6: ${hoursText}` },
+  fb && { key: 'fb', label: 'Fanpage', value: 'Tin tức hằng ngày trên Facebook', href: fb, cta: 'Xem Fanpage' },
+].filter(Boolean) as { key: string; label: string; value: string; href?: string; cta?: string }[];
+const ICONS: Record<string, string> = {
+  addr: 'M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  tel: 'M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8.1 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.9 2Z',
+  zalo: 'M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12Z',
+  mail: 'M3 5h18v14H3zM3 7l9 6 9-6',
+  hours: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2',
+  fb: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3Z',
+};
+const external = (h?: string) => !!h && /^https:\/\//.test(h);
+// D14 sister-school links: real rows only (name + https URL, no TODO-OWNER).
+const sisters = (sisterRaw as { name: string; url: string }[]).filter(
+  (s) => isReal(s.name) && isReal(s.url) && /^https:\/\//.test(s.url),
+);
 ---
-<PageLayout title="Liên hệ" description={`Địa chỉ, điện thoại và giờ làm việc của ${site.name}.`}>
-  <dl>
-    {show(site.address) && (<><dt>Địa chỉ</dt><dd>{site.address}</dd></>)}
-    {tel && (<><dt>Điện thoại</dt><dd><a href={`tel:${tel}`}>{site.hotline}</a></dd></>)}
-    {show(site.zalo) && (<><dt>Zalo</dt><dd><a href={String(site.zalo)} rel="noopener">Zalo OA</a></dd></>)}
-    {show(site.email) && (<><dt>Email</dt><dd><a href={`mailto:${site.email}`}>{site.email}</a></dd></>)}
-    {show(site.hours) && (<><dt>Giờ làm việc</dt><dd>{site.hours}</dd></>)}
-  </dl>
+<PageLayout title="Liên hệ" description={`Địa chỉ, điện thoại và giờ làm việc của ${site.name}.`}
+  lead="Nhà trường luôn sẵn sàng đón phụ huynh đến tham quan và trao đổi.">
+  {tiles.length > 0 ? (
+    <ul class="tiles" role="list">
+      {tiles.map((t, i) => (
+        <li class={`tile tile--${t.key}`} data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+          <span class="tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d={ICONS[t.key]} /></svg></span>
+          <p class="tile__label">{t.label}</p>
+          <p class="tile__value">{t.value}</p>
+          {t.href && t.cta && (
+            <a class="tile__cta" href={t.href} rel={external(t.href) ? 'noopener' : undefined}
+              target={external(t.href) ? '_blank' : undefined}>{t.cta}</a>
+          )}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="pending">Thông tin liên hệ đang được nhà trường cập nhật.</p>
+  )}
+  {sisters.length > 0 && (
+    <section class="sisters" aria-labelledby="he-thong">
+      <h2 id="he-thong">Thành viên Hệ thống Giáo dục Victoria</h2>
+      <ul role="list">
+        {sisters.map((s) => <li><a href={s.url} rel="noopener" target="_blank">{s.name}</a></li>)}
+      </ul>
+    </section>
+  )}
 </PageLayout>
+
+<style>
+  .tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); }
+  @media (min-width: 700px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+  .tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-6) var(--space-5) var(--space-5);
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid var(--brand-tint);
+    box-shadow: 0 2px 10px rgb(59 74 0 / 0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .tile:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--brand); }
+  .tile__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    margin-bottom: var(--space-3);
+    box-shadow: 0 6px 14px rgb(59 74 0 / 0.18);
+    background: radial-gradient(circle at 30% 30%, #a3b22a, #5c7013);
+  }
+  .tile:nth-child(3n + 2) .tile__icon { background: radial-gradient(circle at 30% 30%, #ff8482, #ff4344); }
+  .tile__label { margin: 0; font-size: var(--text-sm); font-weight: 600; color: var(--muted); }
+  .tile__value { margin: var(--space-1) 0 var(--space-4); font-weight: 700; color: var(--brand-ink); overflow-wrap: anywhere; }
+  .tile__cta {
+    margin-top: auto;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 0 var(--space-5);
+    border-radius: var(--radius-pill);
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+  .tile__cta:hover { background: var(--brand-ink); color: #fff; transform: translateY(-2px); }
+  .tile--tel .tile__cta { background: var(--accent-strong); }
+  .tile--tel .tile__cta:hover { background: var(--accent-ink); }
+  .pending { color: var(--muted); }
+  .sisters { margin-top: var(--space-16); padding: var(--space-6); border-radius: 22px; background: var(--brand-soft); }
+  .sisters h2 { font-size: var(--text-xl); }
+  .sisters ul { margin: 0; padding-left: var(--space-5); }
+  .sisters a { display: inline-flex; min-height: var(--tap); align-items: center; font-weight: 600; }
+</style>

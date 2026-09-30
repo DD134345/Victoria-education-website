@@ -1,0 +1,84 @@
+---
+// SectionTitle — two-tone Baloo 2 section heading (green title + pink accent)
+// followed by our own hand-drawn vine-and-flower doodle (inline SVG).
+// Props: { title, accent?, eyebrow?, align?: 'left'|'center', as?: 'h2'|'h3', id? }.
+// The wrapper carries data-reveal for the BaseLayout scroll-reveal observer;
+// content is fully visible when JS is off (CSS hides [data-reveal] only
+// under <html class="js">).
+interface Props {
+  title: string;
+  accent?: string;
+  eyebrow?: string;
+  align?: 'left' | 'center';
+  as?: 'h2' | 'h3';
+  id?: string;
+}
+
+const { title, accent, eyebrow, align = 'center', as: Tag = 'h2', id } = Astro.props;
+---
+<div class={`section-title section-title--${align}`} data-reveal>
+  {eyebrow && <p class="section-title__eyebrow">{eyebrow}</p>}
+  <Tag class="section-title__title" id={id}>
+    {title}{accent && <span class="section-title__accent"> {accent}</span>}
+  </Tag>
+  <svg class="section-title__doodle" viewBox="0 0 120 32" aria-hidden="true" focusable="false">
+    <path d="M4 24 C 28 24 40 10 62 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+    <path d="M28 21 C 24 13 26 7 34 5 C 36 13 34 19 28 21 Z" fill="currentColor" />
+    <path d="M46 15 C 44 9 46 4 52 3 C 54 9 52 14 46 15 Z" fill="currentColor" opacity="0.65" />
+    <g class="section-title__bloom">
+      <circle cx="84" cy="9" r="5" />
+      <circle cx="93" cy="15" r="5" />
+      <circle cx="89" cy="24" r="5" />
+      <circle cx="79" cy="24" r="5" />
+      <circle cx="75" cy="15" r="5" />
+      <circle cx="84" cy="17" r="3.2" class="section-title__bloom-core" />
+    </g>
+    <circle cx="108" cy="10" r="2.4" fill="currentColor" opacity="0.55" />
+    <circle cx="114" cy="20" r="1.8" fill="currentColor" opacity="0.4" />
+  </svg>
+</div>
+
+<style>
+  .section-title {
+    margin: 0 0 var(--space-8);
+    max-width: 100%;
+  }
+  .section-title--center { text-align: center; }
+  .section-title--left { text-align: left; }
+  .section-title__eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 var(--space-2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .section-title__title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(2rem, 1.6rem + 2.4vw, 3.5rem);
+    line-height: 1.15;
+    color: var(--brand-ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+  .section-title__accent {
+    color: var(--accent-strong);
+  }
+  .section-title__doodle {
+    display: block;
+    width: 120px;
+    height: 32px;
+    margin-top: var(--space-2);
+    color: var(--brand);
+  }
+  .section-title--center .section-title__doodle {
+    margin-inline: auto;
+  }
+  .section-title__bloom { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 1.5; }
+  .section-title__bloom-core { fill: var(--accent-strong); stroke: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .section-title__doodle { animation: none; }
+  }
+</style>

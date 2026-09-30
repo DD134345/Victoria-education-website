@@ -9,16 +9,26 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+/* overflow-x: clip (not hidden) so decorative frame backdrops never cause sideways
+   scroll on phones, while position: sticky keeps working. */
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
 
 body {
   margin: 0;
-  background: var(--surface);
+  background:
+    radial-gradient(48rem 24rem at 6% -6rem, var(--brand-soft) 0%, transparent 60%),
+    radial-gradient(44rem 22rem at 98% 2rem, var(--accent-soft) 0%, transparent 55%),
+    var(--surface);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: var(--leading);
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
 }
 
 h1, h2, h3, h4 {
@@ -50,6 +60,69 @@ small, .muted, time { color: var(--muted); }
 
 .container { width: min(100% - 2 * var(--space-4), var(--content)); margin-inline: auto; }
 
+/* Vertical rhythm for page sections. Components may own their own padding;
+   use .section on plain <section> wrappers between components. */
+.section { padding: var(--space-12) 0; }
+.section--alt { background: var(--surface-alt); }
+@media (min-width: 768px) {
+  .section { padding: var(--space-16) 0; }
+}
+
+/* Pill buttons. Text is always white on the darker green/pink tokens so the
+   pairs stay WCAG AA (see scripts/verify-contrast.mjs). Never pink-on-pink. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-base);
+  line-height: 1.3;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease,
+    transform 0.25s ease, box-shadow 0.25s ease;
+}
+.btn:active { transform: scale(0.98); }
+.btn--green { background: var(--brand); color: #fff; box-shadow: 0 8px 20px rgb(83 101 1 / 0.22); }
+.btn--green:hover { background: var(--brand-ink); color: #fff; transform: translateY(-2px); }
+.btn--pink { background: var(--accent-strong); color: #fff; box-shadow: 0 8px 20px rgb(201 48 58 / 0.25); }
+.btn--pink:hover { background: var(--accent-ink); color: #fff; transform: translateY(-2px); }
+.btn--outline { background: #fff; color: var(--brand-ink); border-color: var(--brand); }
+.btn--outline:hover { background: var(--brand); color: #fff; transform: translateY(-2px); }
+
+/* Scroll-reveal: hidden ONLY when <html class="js"> (set by an inline script
+   in BaseLayout). Content is fully visible when JS is off. The single
+   IntersectionObserver in BaseLayout adds .is-visible. Stagger per item with
+   style="--reveal-delay: 90ms". */
+html.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+html.js [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+html.js [data-reveal].reveal-now { transition: none; }
+
+/* Gentle ambient motion (transform/opacity only). */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes shimmer {
+  from { opacity: 0.35; }
+  to { opacity: 0.7; }
+}
+
 .skip-link {
   position: absolute; left: var(--space-2); top: -4rem;
   background: var(--brand-ink); color: #fff; padding: var(--space-3) var(--space-4);
@@ -58,5 +131,37 @@ small, .muted, time { color: var(--muted); }
 .skip-link:focus { top: var(--space-2); }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  html { scroll-behavior: auto; }
+  /* No keyframe animations (floating, drifting, morphing, looping). */
+  *, *::before, *::after { animation: none !important; }
+  /* Transitions: keep colour/opacity fades, drop movement. */
+  *, *::before, *::after {
+    transition-property: color, background-color, border-color, outline-color, box-shadow, opacity, fill, stroke !important;
+    transition-duration: 0.2s !important;
+  }
+  /* Scroll reveal: fade only, never slide. */
+  html.js [data-reveal] { transform: none !important; transition: opacity 0.5s ease !important; }
+  /* Page titles fade in without moving. */
+  .page-hero__title, .page-hero__lead { animation: rm-fade 0.6s ease both !important; }
+  .page-hero__title::after { animation: none !important; transform: none !important; }
+  /* Hover states must not move things. */
+  .btn:hover, .btn:active, .hero__cta:hover, .news-card:hover, .notice-item:hover, .news-card__pill:hover,
+  .tile:hover, .tile__cta:hover, .group:hover, .kids a:hover, .rule-links a:hover, .article-nav__link:hover,
+  .chip:hover, .class-card:hover, .teacher-card:hover, .pf:hover .pf__back, .pf:hover .pf__img, .cta:hover {
+    transform: none !important;
+  }
+}
+@keyframes rm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Visually hidden but read by screen readers (table captions, list headings). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

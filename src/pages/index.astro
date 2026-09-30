@@ -1,5 +1,8 @@
 ---
-// WEB-08: Homepage. Only approved content (getPublished). Every section hidden when empty.
+// Homepage (restyle-B). Only approved content renders. Every section hides
+// when empty in production. Dev preview: when import.meta.env.DEV is true AND
+// a section has no real data, clearly-labelled "[Mẫu]" demo content from
+// src/lib/demo.ts fills that section only (never in production builds).
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPublished } from '../lib/published';
 import { site, isPlaceholder } from '../lib/site';
@@ -7,10 +10,12 @@ import { isVisible, visibleRoutes } from '../lib/nav';
 import { formatVnDate, parseVnDate } from '../lib/dates';
 import { slug as slugify } from '../lib/slug';
 
+import SectionTitle from '../components/SectionTitle.astro';
 import Hero from '../components/Hero.astro';
 import CardGrid from '../components/CardGrid.astro';
 import NewsCard from '../components/NewsCard.astro';
 import NoticeItem from '../components/NoticeItem.astro';
+import FactsBand from '../components/FactsBand.astro';
 import MethodCards from '../components/MethodCards.astro';
 import ClassCard from '../components/ClassCard.astro';
 import Timeline from '../components/Timeline.astro';
@@ -18,11 +23,18 @@ import MenuTable from '../components/MenuTable.astro';
 import TestimonialTabs from '../components/TestimonialTabs.astro';
 import AlbumTeaser from '../components/AlbumTeaser.astro';
 import PartnerStrip from '../components/PartnerStrip.astro';
+import FacilityStrip from '../components/FacilityStrip.astro';
+import { photo, altFor, classKey } from '../lib/photos';
 
 import siteFactsRaw from '../data/site-facts.json';
 import dailyScheduleRaw from '../data/daily-schedule.json';
 import classesRaw from '../data/classes.json';
 import homeReasonsRaw from '../data/home-reasons.json';
+import partnersRaw from '../data/partners.json';
+
+// Demo preview data: DEV ONLY. The dynamic import sits inside a dead branch in
+// production builds, so demo strings and SVG assets never reach dist/.
+const demo = import.meta.env.DEV ? await import('../lib/demo') : null;
 
 // Owner-filled JSON lists: [] or any "TODO-OWNER" value counts as empty.
 const hasOwnerMarker = (v: unknown): boolean =>
@@ -128,6 +140,27 @@ const classItems = cleanList<{
   ctaHref?: string;
 }>(classesRaw).filter((c) => c.ageGroup && c.className && c.teacherName && c.schedule && c.capacity);
 
+// Demo fallbacks (DEV ONLY, per section, real data always wins).
+const demoNews = demo && news.length === 0 ? demo.demoNews : [];
+const demoNotices = demo && activeNotices.length === 0 ? demo.demoNotices : [];
+const demoFacts = demo && facts.length === 0 ? demo.demoFacts : [];
+const demoReasons = demo && reasons.length === 0 ? demo.demoReasons : [];
+const demoMethods = demo && methods.length === 0 ? demo.demoMethods : [];
+const demoSchedule = demo && scheduleItems.length === 0 ? demo.demoSchedule : [];
+const demoTestimonials =
+  demo && !showTestimonials
+    ? { parents: demo.demoParentTestimonials, teachers: demo.demoTeacherTestimonials }
+    : null;
+const demoAlbumItems = demo && !showAlbums ? [{ ...demo.demoAlbum, href: null as string | null }] : [];
+const demoPartners = demo ? demo.demoPartners : [];
+// Real partners (hidden when empty; TODO-OWNER counts as missing).
+const hasRealPartners =
+  Array.isArray(partnersRaw) &&
+  (partnersRaw as Array<{ name?: string; logo?: string; image?: unknown }>).some(
+    (p) => p && p.name && (p.logo || p.image) && !hasOwnerMarker(p),
+  );
+const demoBadge = demo?.DEMO_BADGE ?? 'Nội dung mẫu';
+
 // Hotline: TODO-OWNER counts as missing -> no "Gọi ngay" CTA anywhere.
 const hotlineRaw = typeof site.hotline === 'string' ? site.hotline : '';
 const hotline = isPlaceholder(hotlineRaw) ? '' : hotlineRaw.trim();
@@ -162,86 +195,191 @@ const safeHref = (href?: string): string | undefined => {
       subtext="Thành viên Hệ thống Giáo dục Victoria"
       primaryCta={{ label: 'Đăng ký tham quan', href: dangKyHref }}
       {...(hasHotline ? { secondaryCta: { label: 'Gọi ngay', href: telHref } } : {})}
+      background="gradient"
     />
 
     <!-- 2: reasons -->
-    {reasons.length > 0 && (
-      <CardGrid
-        cols={3}
-        cards={reasons.map((r) => ({ title: r.title, description: r.text, href: safeHref(r.href) }))}
-      />
+    {(reasons.length > 0 || demoReasons.length > 0) && (
+      <div class="home-block">
+        <div class="container" data-reveal>
+          {demoReasons.length > 0 && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <SectionTitle title="Vì sao chọn" accent="Newton" align="center" />
+        </div>
+        {reasons.length > 0 ? (
+          <CardGrid
+            cols={3}
+            cards={reasons.map((r, i) => ({ title: r.title, description: r.text, href: safeHref(r.href), image: photo(`home-ly-do-${i + 1}`), imageAlt: altFor(`home-ly-do-${i + 1}`, r.title) }))}
+          />
+        ) : (
+          <CardGrid
+            cols={3}
+            subheading={demo?.demoOverview}
+            cards={demoReasons.map((r) => ({ title: r.title, description: r.text }))}
+          />
+        )}
+      </div>
     )}
 
+    {/* 2b: facility photos (assets/photos/co-so-vat-chat) */}
+    <FacilityStrip />
+
     <!-- 3: news -->
-    {news.length > 0 && (
-      <section class="news-section">
+    {(news.length > 0 || demoNews.length > 0) && (
+      <section class="news-section home-section">
         <div class="container">
-          <ul style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); padding: 0; list-style: none;">
-            {news.map((n) => (
-              <li>
+          {demoNews.length > 0 && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <div data-reveal>
+            <SectionTitle title="Tin tức" accent="Sự kiện" align="center" />
+          </div>
+          <ul class="news-grid">
+            {news.map((n, i) => (
+              <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
                 <NewsCard entry={n} />
               </li>
             ))}
+            {demoNews.map((n, i) => (
+              <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+                <NewsCard
+                  entry={{
+                    data: {
+                      title: n.title,
+                      date: n.date,
+                      summary: n.summary,
+                      category: n.category,
+                      cover: n.cover,
+                      cover_alt: n.coverAlt,
+                      slug: 'minh-hoa',
+                    },
+                  }}
+                  href={null}
+                />
+              </li>
+            ))}
           </ul>
-          <div style="margin-top: 1.5rem; text-align: center;">
-            {tinTucVisible && <a href="/tin-tuc/">Xem tất cả</a>}
+          <div class="more-row">
+            {tinTucVisible && <a class="more-link" href="/tin-tuc/">Xem tất cả</a>}
           </div>
         </div>
       </section>
     )}
 
     <!-- 4: notices -->
-    {activeNotices.length > 0 && (
-      <section class="notices-section">
+    {(activeNotices.length > 0 || demoNotices.length > 0) && (
+      <section class="notices-section home-section home-section--alt">
         <div class="container">
-          <ul style="display: grid; gap: 1rem; padding: 0; list-style: none;">
-            {activeNotices.map((n) => (
-              <li>
+          {demoNotices.length > 0 && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <div data-reveal>
+            <SectionTitle title="Thông báo" accent="mới nhất" align="center" />
+          </div>
+          <ul class="notices-list">
+            {activeNotices.map((n, i) => (
+              <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
                 <NoticeItem entry={n} />
               </li>
             ))}
+            {demoNotices.map((n, i) => (
+              <li data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+                <NoticeItem
+                  entry={{
+                    data: { title: n.title, date: n.date, summary: n.summary, slug: 'minh-hoa' },
+                  }}
+                  href={null}
+                />
+              </li>
+            ))}
           </ul>
-          <div style="margin-top: 1rem; text-align: center;">
-            {thongBaoVisible && <a href="/thong-bao/">Xem tất cả</a>}
+          <div class="more-row">
+            {thongBaoVisible && <a class="more-link" href="/thong-bao/">Xem tất cả</a>}
           </div>
         </div>
       </section>
     )}
 
     <!-- 5: facts -->
-    {facts.length > 0 && (
-      <CardGrid cols={3} cards={facts.map((f) => ({ title: f.title, description: f.text }))} />
+    {(facts.length > 0 || demoFacts.length > 0) && (
+      <div data-reveal>
+        {facts.length > 0 ? (
+          <FactsBand facts={facts.map((f) => ({ value: f.title, label: f.text }))} />
+        ) : (
+          <div class="demo-band">
+            <p class="demo-note demo-note--on-dark"><span>{demoBadge}</span></p>
+            <FactsBand facts={demoFacts} />
+          </div>
+        )}
+      </div>
     )}
 
-    <!-- 6: MethodCards (only when the phuong-phap route is generated) -->
-    {methods.length > 0 && phuongPhapVisible && <MethodCards methods={methods} />}
+    <!-- 6: MethodCards (only when the phuong-phap route is generated, or demo) -->
+    {((methods.length > 0 && phuongPhapVisible) || demoMethods.length > 0) && (
+      <div class="home-block">
+        <div class="container" data-reveal>
+          {demoMethods.length > 0 && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <SectionTitle title="Phương pháp" accent="giáo dục" align="center" />
+        </div>
+        {methods.length > 0 && phuongPhapVisible ? (
+          <MethodCards methods={methods} />
+        ) : (
+          <MethodCards methods={demoMethods.map((m) => ({ title: m.title, description: m.description }))} />
+        )}
+      </div>
+    )}
 
     <!-- 7: classes -->
     {classItems.length > 0 && (
-      <section class="classes-section">
-        <div
-          class="container"
-          style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));"
-        >
-          {classItems.slice(0, 3).map((c) => (
-            <ClassCard
-              ageGroup={c.ageGroup}
-              className={c.className}
-              teacherName={c.teacherName}
-              schedule={c.schedule}
-              capacity={c.capacity}
-              ctaHref={safeHref(c.ctaHref)}
-            />
-          ))}
+      <section class="classes-section home-section">
+        <div class="container">
+          <div data-reveal>
+            <SectionTitle title="Lớp học" accent="của bé" align="center" />
+          </div>
+          <div class="classes-grid">
+            {classItems.slice(0, 3).map((c, i) => (
+              <div data-reveal style={`--reveal-delay: ${(i % 3) * 90}ms;`}>
+                <ClassCard
+                  ageGroup={c.ageGroup}
+                  className={c.className}
+                  teacherName={c.teacherName}
+                  schedule={c.schedule}
+                  capacity={c.capacity}
+                  ctaHref={safeHref(c.ctaHref)}
+                  classPhotoKey={classKey(c.className)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     )}
 
     <!-- 8: daily schedule -->
-    {scheduleItems.length > 0 && (
-      <Timeline
-        items={scheduleItems.map((d) => ({ date: d.time, title: d.activity, description: d.description }))}
-      />
+    {(scheduleItems.length > 0 || demoSchedule.length > 0) && (
+      <div class="home-block">
+        <div class="container" data-reveal>
+          {demoSchedule.length > 0 && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <SectionTitle title="Một ngày" accent="của bé" align="center" />
+        </div>
+        {scheduleItems.length > 0 ? (
+          <Timeline
+            layout="schedule"
+            items={scheduleItems.map((d) => ({ date: d.time, title: d.activity, description: d.description }))}
+          />
+        ) : (
+          <Timeline
+            layout="schedule"
+            items={demoSchedule.map((d) => ({ date: d.time, title: d.activity, description: d.description }))}
+            images={demo?.demoScheduleImages ?? []}
+          />
+        )}
+      </div>
     )}
 
     <!-- 9: weekly menu -->
@@ -250,33 +388,80 @@ const safeHref = (href?: string): string | undefined => {
     )}
 
     <!-- 10: testimonials -->
-    {showTestimonials && <TestimonialTabs parents={parentTestimonials} teachers={[]} />}
+    {(showTestimonials || demoTestimonials) && (
+      <div class="home-block">
+        <div class="container" data-reveal>
+          {demoTestimonials && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <SectionTitle title="Cảm nhận" accent="yêu thương" align="center" />
+        </div>
+        {showTestimonials ? (
+          <TestimonialTabs parents={parentTestimonials} teachers={[]} />
+        ) : (
+          demoTestimonials && (
+            <TestimonialTabs
+              parents={demoTestimonials.parents.map((t) => ({
+                author_label: t.authorLabel,
+                content: t.content,
+                avatar: t.avatar,
+              }))}
+              teachers={demoTestimonials.teachers.map((t) => ({
+                author_label: t.authorLabel,
+                content: t.content,
+                avatar: t.avatar,
+              }))}
+            />
+          )
+        )}
+      </div>
+    )}
 
     <!-- 11: albums -->
-    {showAlbums && <AlbumTeaser limit={3} />}
+    {(showAlbums || demoAlbumItems.length > 0) && (
+      <div class="home-block">
+        <div class="container" data-reveal>
+          {demoAlbumItems.length > 0 && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <SectionTitle title="Thư viện" accent="hình ảnh" align="center" />
+        </div>
+        {showAlbums ? (
+          <AlbumTeaser limit={3} />
+        ) : (
+          <AlbumTeaser limit={3} viewAllHref="" demoItems={demoAlbumItems} />
+        )}
+      </div>
+    )}
 
-    <!-- 12: partners (self-hiding when partners.json is empty) -->
-    <PartnerStrip />
+    <!-- 12: partners (hidden when partners.json is empty; demo in dev) -->
+    {(hasRealPartners || demoPartners.length > 0) && (
+      <div class="home-block">
+        <div class="container" data-reveal>
+          {demoPartners.length > 0 && !hasRealPartners && (
+            <p class="demo-note"><span>{demoBadge}</span></p>
+          )}
+          <SectionTitle title="Đơn vị" accent="đồng hành" align="center" />
+        </div>
+        {hasRealPartners ? (
+          <PartnerStrip />
+        ) : (
+          <PartnerStrip partners={demoPartners.map((p) => ({ name: p.name, image: p.image }))} />
+        )}
+      </div>
+    )}
 
     <!-- 13: CTA band -->
-    <section
-      class="cta-band"
-      style="text-align: center; padding: 3rem 1rem; background: var(--brand-soft, #f0fdf4);"
-    >
-      <div class="container">
-        <h2>Đặt lịch tham quan trường</h2>
-        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
-          <a
-            href={dangKyHref}
-            style="padding: 0.75rem 1.5rem; background: var(--brand); color: white; border-radius: 4px; text-decoration: none;"
-          >
+    <section class="cta-band" aria-labelledby="cta-band-heading">
+      <div class="container" data-reveal>
+        <h2 id="cta-band-heading">Đặt lịch tham quan trường</h2>
+        <p class="cta-band__text">Mời ba mẹ đến thăm không gian học tập của các bé.</p>
+        <div class="cta-band__actions">
+          <a class="cta-band__btn cta-band__btn--primary" href={dangKyHref}>
             Đăng ký tham quan
           </a>
           {hasHotline && (
-            <a
-              href={telHref}
-              style="padding: 0.75rem 1.5rem; border: 1px solid var(--brand); color: var(--brand); border-radius: 4px; text-decoration: none;"
-            >
+            <a class="cta-band__btn cta-band__btn--ghost" href={telHref}>
               Gọi ngay
             </a>
           )}
@@ -285,3 +470,153 @@ const safeHref = (href?: string): string | undefined => {
     </section>
   </main>
 </BaseLayout>
+
+<style>
+  /* Homepage rhythm: components own their padding; wrappers only separate blocks. */
+  .home-block { padding: var(--space-4) 0; }
+  .home-block:first-of-type { padding-top: var(--space-8); }
+  .home-section { padding: var(--space-12) 0; }
+  .home-section--alt { background: var(--surface-alt); }
+
+  /* Dev-preview badge: visible "Nội dung mẫu" marker on each demo section. */
+  .demo-note { text-align: center; margin: 0 0 var(--space-4); }
+  .demo-note span {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--accent-strong);
+    border-radius: var(--radius-pill);
+    padding: var(--space-2) var(--space-5);
+    min-height: var(--tap);
+    line-height: calc(var(--tap) - 2 * var(--space-2));
+  }
+  .demo-band { position: relative; }
+  .demo-band .demo-note--on-dark {
+    position: absolute;
+    top: var(--space-5);
+    left: 0;
+    right: 0;
+    z-index: 2;
+  }
+  .demo-band .facts { padding-top: calc(var(--space-16) + var(--space-8)); }
+
+  .news-grid {
+    list-style: none;
+    margin: var(--space-8) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 768px) {
+    .news-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 1100px) {
+    .news-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .notices-list {
+    list-style: none;
+    margin: var(--space-8) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-5);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 900px) {
+    .notices-list { grid-template-columns: repeat(3, 1fr); }
+  }
+  .classes-grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+    margin-top: var(--space-8);
+  }
+  @media (min-width: 768px) {
+    .classes-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 1100px) {
+    .classes-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .more-row { margin-top: var(--space-8); text-align: center; }
+  .more-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap);
+    padding: var(--space-2) var(--space-6);
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--brand);
+    color: var(--brand-ink);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
+  }
+  .more-link:hover { background: var(--brand); color: #fff; transform: translateY(-2px); }
+
+  /* CTA band: green-to-pink gradient, white Baloo 2 heading, pill buttons. */
+  .cta-band {
+    position: relative;
+    overflow: clip;
+    text-align: center;
+    padding: var(--space-16) var(--space-4);
+    background:
+      radial-gradient(30rem 16rem at 90% 110%, rgb(255 90 90 / 0.4) 0%, transparent 60%),
+      linear-gradient(140deg, var(--brand-ink) 0%, var(--brand) 70%);
+  }
+  .cta-band h2 {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    color: #fff;
+    margin: 0 0 var(--space-2);
+  }
+  .cta-band__text { color: rgb(255 255 255 / 0.92); margin: 0 0 var(--space-6); }
+  .cta-band__actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .cta-band__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
+  }
+  .cta-band__btn:active { transform: scale(0.98); }
+  .cta-band__btn--primary { background: #fff; color: var(--brand-ink); }
+  .cta-band__btn--primary:hover { transform: translateY(-2px); background: var(--brand-soft); color: var(--brand-ink); }
+  .cta-band__btn--ghost { border: 2px solid rgb(255 255 255 / 0.85); color: #fff; }
+  .cta-band__btn--ghost:hover { background: rgb(255 255 255 / 0.16); transform: translateY(-2px); color: #fff; }
+
+  /* Scroll-reveal: hidden ONLY when <html class="js"> (set by BaseLayout).
+     Content is fully visible when JS is off. */
+  :global(html.js [data-reveal]) {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  :global(html.js [data-reveal].is-visible) {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js [data-reveal]) { opacity: 1; transform: none; transition: none; }
+    .more-link, .cta-band__btn { transition: none; }
+    .more-link:hover, .cta-band__btn--primary:hover, .cta-band__btn--ghost:hover { transform: none; }
+  }
+</style>

@@ -3,6 +3,8 @@
 // Crops photo to 4:5 per spec §6.7. Shows: name, role, qualification, years, quote.
 // Photo consent required (photo_consent: true in data).
 import { Image } from 'astro:assets';
+import PhotoFrame from './PhotoFrame.astro';
+import { hasPhoto, teacherKey } from '../lib/photos';
 
 interface Props {
   /** Teacher data from teachers collection */
@@ -21,14 +23,22 @@ interface Props {
 }
 
 const { teacher, variant = 'default' } = Astro.props;
+// Portrait from src/assets/photos/giao-vien/<name>.jpg (only with photo consent).
+const key = teacherKey(teacher.name);
+const folderPhoto = teacher.photo_consent && hasPhoto(key);
 ---
 
 <article class="teacher-card teacher-card--{variant}">
-  {teacher.photo && teacher.photo_consent && (
+  {folderPhoto ? (
+    <PhotoFrame photoKey={key} alt={`Giáo viên ${teacher.name}`} shape="portrait" decorate={false}
+      sizes="(min-width: 1024px) 280px, 80vw" class="teacher-card__frame" />
+  ) : teacher.photo && teacher.photo_consent ? (
     <div class="teacher-card__photo">
       <Image src={teacher.photo} alt={`Giáo viên ${teacher.name}`} width={320} height={400} loading="lazy" />
     </div>
-  )}
+  ) : import.meta.env.DEV ? (
+    <PhotoFrame photoKey={key} shape="portrait" decorate={false} sizes="280px" class="teacher-card__frame" />
+  ) : null}
   <div class="teacher-card__content">
     <header class="teacher-card__header">
       <h3 class="teacher-card__name">{teacher.name}</h3>

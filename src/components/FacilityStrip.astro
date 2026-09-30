@@ -1,0 +1,54 @@
+---
+// FacilityStrip (homepage): the first photos from src/assets/photos/co-so-vat-chat/
+// in alternating green/pink frames. Hidden in production until at least one photo
+// exists; `npm run dev` shows four empty frames with the file names to use.
+import PhotoFrame from './PhotoFrame.astro';
+import SectionTitle from './SectionTitle.astro';
+import { photosIn, altFor } from '../lib/photos';
+import { isVisible } from '../lib/nav';
+
+interface Props { limit?: number }
+const { limit = 4 } = Astro.props;
+const photos = photosIn('co-so-vat-chat').slice(0, limit);
+const dev = import.meta.env.DEV;
+const show = photos.length > 0 || dev;
+const galleryHref = (await isVisible('/thu-vien/co-so-vat-chat/')) ? '/thu-vien/co-so-vat-chat/' : '';
+const shapes = ['rounded', 'arch', 'rounded', 'arch'] as const;
+---
+{show && (
+  <section class="facility home-section" aria-labelledby="facility-heading">
+    <div class="container">
+      <SectionTitle title="Cơ sở" accent="vật chất" align="center" id="facility-heading" />
+      <ul class="facility__grid" role="list">
+        {photos.length > 0
+          ? photos.map((p, i) => (
+              <li data-reveal style={`--reveal-delay: ${(i % 4) * 90}ms;`}>
+                <PhotoFrame src={p.src} alt={altFor(p.key, `Cơ sở vật chất – ảnh ${i + 1}`)} shape={shapes[i % 4]}
+                  tone={i % 2 ? 'pink' : 'green'} sizes="(min-width: 1024px) 25vw, (min-width: 600px) 50vw, 100vw" />
+              </li>
+            ))
+          : [1, 2, 3, 4].map((n, i) => (
+              <li><PhotoFrame photoKey={`co-so-vat-chat/0${n}-ten-anh`} shape={shapes[i]} tone={i % 2 ? 'pink' : 'green'} sizes="25vw" /></li>
+            ))}
+      </ul>
+      {galleryHref && (
+        <p class="facility__more"><a class="btn btn--outline" href={galleryHref}>Xem tất cả ảnh</a></p>
+      )}
+    </div>
+  </section>
+)}
+
+<style>
+  .facility { padding: var(--space-12) 0; }
+  .facility__grid {
+    list-style: none;
+    margin: var(--space-8) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-8) var(--space-6);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 600px) { .facility__grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .facility__grid { grid-template-columns: repeat(4, 1fr); align-items: end; } }
+  .facility__more { text-align: center; margin: var(--space-10) auto 0; max-width: none; }
+</style>

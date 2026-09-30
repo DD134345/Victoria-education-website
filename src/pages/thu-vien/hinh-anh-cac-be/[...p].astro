@@ -1,9 +1,10 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Hình ảnh các bé (WEB-09): albums of this category only. Hidden until >= 1 album in it.
 import PageLayout from '../../../layouts/PageLayout.astro';
+import AlbumList from '../../../components/AlbumList.astro';
 import { onlyIf } from '../../../lib/nav';
 export const getStaticPaths = () => onlyIf('/thu-vien/hinh-anh-cac-be/');
 ---
-<PageLayout title="Hình ảnh các bé">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Hình ảnh các bé" eyebrow="Thư viện ảnh" lead="Hình ảnh các bé được đăng khi đã có sự đồng ý của phụ huynh.">
+  <AlbumList category="hinh-anh-cac-be" />
 </PageLayout>

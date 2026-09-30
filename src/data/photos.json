@@ -1,0 +1,6 @@
+{
+  "_readme": "Alt text for photos in src/assets/photos/. Key = path under photos/ without extension, e.g. \"home-hero\", \"co-so-vat-chat/phong-hoc-1\". Describe what the photo shows, in Vietnamese.",
+  "alt": {
+    "home-hero": "Khuôn viên Trường Mầm non Newton Thanh Hà"
+  }
+}

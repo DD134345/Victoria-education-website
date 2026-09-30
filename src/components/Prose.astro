@@ -1,23 +1,21 @@
 ---
-// Prose component (WEB-07b). Rich text rendering for page content, news, notices.
-// Applies consistent typography: Baloo 2 headings, Be Vietnam Pro body.
-// Handles: h2-h4, p, ul/ol, blockquote, table, img, a, strong, em.
-import { Image } from 'astro:assets';
-
+// Prose component (WEB-07b, fixed in WEB-09). Rich-text wrapper for Markdown
+// page/news/notice bodies: Baloo 2 headings, Be Vietnam Pro body.
+// Content arrives through the default <slot /> (a `children` prop is never
+// populated in Astro), and every descendant rule is :global() because the
+// rendered Markdown does not carry this component's scoped-style attribute.
 interface Props {
-  /** HTML string or Markdown-rendered content */
-  children: unknown;
   /** Wrapper class */
   class?: string;
   /** Base heading level (h2 by default, since h1 is page title) */
   baseLevel?: 2 | 3;
 }
 
-const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
+const { class: wrapperClass = '', baseLevel = 2 } = Astro.props;
 ---
 
-<div class="prose {wrapperClass}" data-base-level={baseLevel}>
-  {children}
+<div class:list={['prose', wrapperClass]} data-base-level={baseLevel}>
+  <slot />
 </div>
 
 <style>
@@ -30,7 +28,7 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
   }
 
   /* Headings */
-  .prose h2, .prose h3, .prose h4 {
+  .prose :global(h2), .prose :global(h3), .prose :global(h4) {
     font-family: var(--font-heading);
     font-weight: 700;
     line-height: var(--leading-tight);
@@ -38,38 +36,38 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
     margin: var(--space-8) 0 var(--space-4);
     text-wrap: balance;
   }
-  .prose h2 { font-size: var(--text-2xl); }
-  .prose h3 { font-size: var(--text-xl); font-weight: 600; }
-  .prose h4 { font-size: var(--text-lg); font-weight: 600; }
+  .prose :global(h2) { font-size: var(--text-2xl); }
+  .prose :global(h3) { font-size: var(--text-xl); font-weight: 600; }
+  .prose :global(h4) { font-size: var(--text-lg); font-weight: 600; }
 
   /* Adjust if baseLevel is 3 */
-  .prose[data-base-level="3"] h2 { font-size: var(--text-xl); }
-  .prose[data-base-level="3"] h3 { font-size: var(--text-lg); }
+  .prose[data-base-level="3"] :global(h2) { font-size: var(--text-xl); }
+  .prose[data-base-level="3"] :global(h3) { font-size: var(--text-lg); }
 
   /* Paragraphs */
-  .prose p { margin: 0 0 var(--space-4); }
-  .prose p:last-child { margin-bottom: 0; }
+  .prose :global(p) { margin: 0 0 var(--space-4); }
+  .prose :global(p:last-child) { margin-bottom: 0; }
 
   /* Links */
-  .prose a {
+  .prose :global(a) {
     color: var(--brand);
     text-underline-offset: 0.2em;
     text-decoration-thickness: 2px;
     transition: color 0.2s ease;
   }
-  .prose a:hover { color: var(--brand-ink); }
+  .prose :global(a:hover) { color: var(--brand-ink); }
 
   /* Text emphasis */
-  .prose strong { font-weight: 700; color: var(--ink); }
-  .prose em { font-style: italic; }
-  .prose code {
+  .prose :global(strong) { font-weight: 700; color: var(--ink); }
+  .prose :global(em) { font-style: italic; }
+  .prose :global(code) {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.9em;
     background: var(--brand-tint);
     padding: 0.125em 0.375em;
     border-radius: var(--radius-sm);
   }
-  .prose pre {
+  .prose :global(pre) {
     background: var(--brand-ink);
     color: var(--brand-tint);
     padding: var(--space-4);
@@ -77,17 +75,17 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
     overflow-x: auto;
     margin: var(--space-4) 0;
   }
-  .prose pre code { background: none; padding: 0; font-size: var(--text-sm); line-height: 1.5; }
+  .prose :global(pre code) { background: none; padding: 0; font-size: var(--text-sm); line-height: 1.5; }
 
   /* Lists */
-  .prose ul, .prose ol { margin: var(--space-4) 0; padding-left: var(--space-6); }
-  .prose li { margin: var(--space-2) 0; }
-  .prose ul { list-style: disc; }
-  .prose ol { list-style: decimal; }
-  .prose ul ul, .prose ol ol, .prose ul ol, .prose ol ul { margin: var(--space-2) 0; }
+  .prose :global(ul), .prose :global(ol) { margin: var(--space-4) 0; padding-left: var(--space-6); }
+  .prose :global(li) { margin: var(--space-2) 0; }
+  .prose :global(ul) { list-style: disc; }
+  .prose :global(ol) { list-style: decimal; }
+  .prose :global(ul ul), .prose :global(ol ol), .prose :global(ul ol), .prose :global(ol ul) { margin: var(--space-2) 0; }
 
   /* Blockquotes */
-  .prose blockquote {
+  .prose :global(blockquote) {
     margin: var(--space-6) 0;
     padding: var(--space-4) var(--space-6);
     border-left: 4px solid var(--accent-strong);
@@ -96,8 +94,8 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
     font-style: italic;
     color: var(--accent-ink);
   }
-  .prose blockquote p:last-child { margin-bottom: 0; }
-  .prose blockquote cite {
+  .prose :global(blockquote p:last-child) { margin-bottom: 0; }
+  .prose :global(blockquote cite) {
     display: block;
     margin-top: var(--space-3);
     font-style: normal;
@@ -106,25 +104,25 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
   }
 
   /* Tables */
-  .prose table {
+  .prose :global(table) {
     width: 100%;
     border-collapse: collapse;
     margin: var(--space-6) 0;
     font-size: var(--text-sm);
   }
-  .prose th, .prose td {
+  .prose :global(th), .prose :global(td) {
     padding: var(--space-3) var(--space-4);
     border: 1px solid var(--brand-tint);
     text-align: left;
   }
-  .prose th {
+  .prose :global(th) {
     background: var(--brand-soft);
     font-family: var(--font-heading);
     font-weight: 700;
     color: var(--brand-ink);
   }
-  .prose tr:nth-child(even) td { background: var(--surface-alt); }
-  .prose caption {
+  .prose :global(tr:nth-child(even) td) { background: var(--surface-alt); }
+  .prose :global(caption) {
     caption-side: bottom;
     padding: var(--space-2);
     font-size: var(--text-sm);
@@ -132,9 +130,9 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
   }
 
   /* Images */
-  .prose img { max-width: 100%; height: auto; border-radius: var(--radius-md); margin: var(--space-4) 0; }
-  .prose figure { margin: var(--space-6) 0; }
-  .prose figcaption {
+  .prose :global(img) { max-width: 100%; height: auto; border-radius: var(--radius-md); margin: var(--space-4) 0; }
+  .prose :global(figure) { margin: var(--space-6) 0; }
+  .prose :global(figcaption) {
     text-align: center;
     font-size: var(--text-sm);
     color: var(--muted);
@@ -142,7 +140,7 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
   }
 
   /* Horizontal rule */
-  .prose hr {
+  .prose :global(hr) {
     border: none;
     border-top: 2px solid var(--brand-tint);
     margin: var(--space-8) 0;
@@ -150,9 +148,8 @@ const { children, class: wrapperClass = '', baseLevel = 2 } = Astro.props;
 
   /* Responsive */
   @media (max-width: 640px) {
-    .prose { font-size: var(--text-sm); }
-    .prose h2 { font-size: var(--text-xl); }
-    .prose h3 { font-size: var(--text-lg); }
-    .prose h4 { font-size: var(--text-base); }
+  .prose :global(h2) { font-size: var(--text-xl); }
+  .prose :global(h3) { font-size: var(--text-lg); }
+  .prose :global(h4) { font-size: var(--text-base); }
   }
 </style>

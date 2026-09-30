@@ -1,9 +1,12 @@
 ---
-// Route skeleton (WEB-04). Generated only when its data exists (section 6.3); WEB-09 renders the content.
+// Cơ sở vật chất (WEB-09): albums of this category only. Hidden until >= 1 album in it.
 import PageLayout from '../../../layouts/PageLayout.astro';
+import AlbumList from '../../../components/AlbumList.astro';
+import FacilityGallery from '../../../components/FacilityGallery.astro';
 import { onlyIf } from '../../../lib/nav';
 export const getStaticPaths = () => onlyIf('/thu-vien/co-so-vat-chat/');
 ---
-<PageLayout title="Cơ sở vật chất">
-  <p>Nội dung đang được cập nhật.</p>
+<PageLayout title="Cơ sở vật chất" eyebrow="Thư viện ảnh" lead="Phòng học, sân chơi và các khu chức năng của trường.">
+  <FacilityGallery />
+  <AlbumList category="co-so-vat-chat" />
 </PageLayout>
