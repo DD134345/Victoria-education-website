@@ -1,33 +1,287 @@
 ---
-// Homepage placeholder. The real homepage (section 6.6) is WEB-08.
+// WEB-08: Homepage. Only approved content (getPublished). Every section hidden when empty.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPublished } from '../lib/published';
-import { site } from '../lib/site';
+import { site, isPlaceholder } from '../lib/site';
+import { isVisible, visibleRoutes } from '../lib/nav';
+import { formatVnDate, parseVnDate } from '../lib/dates';
+import { slug as slugify } from '../lib/slug';
 
-// Only human-approved entries are ever rendered (hard rule 1).
-const news = (await getPublished('news')).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+import Hero from '../components/Hero.astro';
+import CardGrid from '../components/CardGrid.astro';
+import NewsCard from '../components/NewsCard.astro';
+import NoticeItem from '../components/NoticeItem.astro';
+import MethodCards from '../components/MethodCards.astro';
+import ClassCard from '../components/ClassCard.astro';
+import Timeline from '../components/Timeline.astro';
+import MenuTable from '../components/MenuTable.astro';
+import TestimonialTabs from '../components/TestimonialTabs.astro';
+import AlbumTeaser from '../components/AlbumTeaser.astro';
+import PartnerStrip from '../components/PartnerStrip.astro';
+
+import siteFactsRaw from '../data/site-facts.json';
+import dailyScheduleRaw from '../data/daily-schedule.json';
+import classesRaw from '../data/classes.json';
+import homeReasonsRaw from '../data/home-reasons.json';
+
+// Owner-filled JSON lists: [] or any "TODO-OWNER" value counts as empty.
+const hasOwnerMarker = (v: unknown): boolean =>
+  typeof v === 'string' ? v.includes('TODO-OWNER') : JSON.stringify(v).includes('TODO-OWNER');
+const cleanList = <T,>(raw: unknown): T[] =>
+  Array.isArray(raw) ? (raw as T[]).filter((item) => !hasOwnerMarker(item)) : [];
+
+// News: dedupe by id + title, newest first, take 3. Adapt to NewsCard Props (slug derived, never invented facts).
+const allNews = await getPublished('news');
+const seenIds = new Set<string>();
+const seenTitles = new Set<string>();
+const news = [...allNews]
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .filter((n) => {
+    if (seenIds.has(n.id) || seenTitles.has(n.data.title)) return false;
+    seenIds.add(n.id);
+    seenTitles.add(n.data.title);
+    return true;
+  })
+  .slice(0, 3)
+  .map((entry) => ({
+    data: {
+      title: entry.data.title,
+      date: entry.data.date,
+      summary: entry.data.summary,
+      category: entry.data.category,
+      cover: entry.data.cover,
+      cover_alt: entry.data.cover_alt,
+      slug: slugify(entry.data.title) || entry.id.replace(/\.md$/, ''),
+    },
+  }));
+
+// Notices: keep valid_until missing or >= today (Asia/Ho_Chi_Minh), newest first, take 3.
+const todayStart = parseVnDate(formatVnDate(new Date())) ?? new Date();
+const activeNotices = (await getPublished('notices'))
+  .filter((n) => !n.data.valid_until || n.data.valid_until >= todayStart)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3)
+  .map((entry) => ({
+    data: {
+      title: entry.data.title,
+      date: entry.data.date,
+      valid_until: entry.data.valid_until,
+      summary: entry.data.summary,
+      slug: slugify(entry.data.title) || entry.id.replace(/\.md$/, ''),
+    },
+  }));
+
+// Testimonials: schema has ONLY author_label + body (no roles). Render only if >= 2 total,
+// all under the "phu huynh" tab rather than inventing roles.
+const allTestimonials = await getPublished('testimonials');
+const parentTestimonials = allTestimonials
+  .map((t) => ({ author_label: t.data.author_label, content: (t.body ?? '').trim() }))
+  .filter((t) => t.author_label.trim() !== '' && t.content !== '');
+const showTestimonials = parentTestimonials.length >= 2;
+
+// Method cards: from the approved pages entry whose data.slug === 'phuong-phap'; H2s -> anchors.
+const approvedPages = await getPublished('pages');
+const phuongPhapPage = approvedPages.find((p) => {
+  const s = p.data.slug.replace(/^\/|\/$/g, '');
+  return s === 'phuong-phap' || s === 'giao-duc-tuyen-sinh/phuong-phap';
+});
+const methodHeadings = phuongPhapPage?.body
+  ? [...phuongPhapPage.body.matchAll(/^##\s+(.+)$/gm)].map((m) => m[1].trim()).filter(Boolean)
+  : [];
+const methods = methodHeadings.map((title) => ({
+  title,
+  description: '',
+  href: `/giao-duc-tuyen-sinh/phuong-phap/#${slugify(title)}`,
+}));
+
+// Menu of this week: latest approved menus entry by parsed week_start, hidden if unparseable.
+const allMenus = await getPublished('menus');
+const sortedMenus = [...allMenus].sort((a, b) => {
+  const da = parseVnDate(a.data.week_start);
+  const db = parseVnDate(b.data.week_start);
+  return (db?.valueOf() ?? 0) - (da?.valueOf() ?? 0);
+});
+const latestMenu = sortedMenus[0] ?? null;
+const latestWeekStart = latestMenu ? parseVnDate(latestMenu.data.week_start) : null;
+const showMenu = !!latestMenu && !!latestWeekStart;
+
+// Albums: 3 latest, hidden if 0 (no EmptyState on the public homepage).
+const allAlbums = await getPublished('albums');
+const showAlbums =
+  [...allAlbums].sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).length > 0;
+
+// Owner data lists (hidden when empty).
+const facts = cleanList<{ title: string; text: string }>(siteFactsRaw).filter((f) => f.title && f.text);
+const reasons = cleanList<{ title: string; text: string; href?: string }>(homeReasonsRaw).filter(
+  (r) => r.title && r.text,
 );
+const scheduleItems = cleanList<{ time: string; activity: string; description?: string }>(
+  dailyScheduleRaw,
+).filter((d) => d.time && d.activity);
+// Classes: shape is owner-defined; keep rows with the fields ClassCard requires, take 3.
+const classItems = cleanList<{
+  ageGroup: string;
+  className: string;
+  teacherName: string;
+  schedule: string;
+  capacity: string;
+  ctaHref?: string;
+}>(classesRaw).filter((c) => c.ageGroup && c.className && c.teacherName && c.schedule && c.capacity);
+
+// Hotline: TODO-OWNER counts as missing -> no "Gọi ngay" CTA anywhere.
+const hotlineRaw = typeof site.hotline === 'string' ? site.hotline : '';
+const hotline = isPlaceholder(hotlineRaw) ? '' : hotlineRaw.trim();
+const hasHotline = hotline !== '';
+const telHref = `tel:${hotline.replace(/\s+/g, '')}`;
+
+// Registration CTA: /giao-duc-tuyen-sinh/dang-ky/ is only generated when an
+// admissions form URL exists; otherwise fall back to /lien-he/ (same as Header).
+const dangKyHref = (await isVisible('/giao-duc-tuyen-sinh/dang-ky/'))
+  ? '/giao-duc-tuyen-sinh/dang-ky/'
+  : '/lien-he/';
+// "Xem tất cả" targets: only emit when the route is actually generated.
+const routes = await visibleRoutes();
+const tinTucVisible = routes['/tin-tuc/'] === true;
+const thongBaoVisible = routes['/thong-bao/'] === true;
+const phuongPhapVisible = routes['/giao-duc-tuyen-sinh/phuong-phap/'] === true;
+// Owner-provided internal hrefs: drop them when the target route is not generated.
+const safeHref = (href?: string): string | undefined => {
+  if (!href) return undefined;
+  if (!href.startsWith('/')) return href;
+  const path = href.split('#')[0].split('?')[0];
+  const key = (path.endsWith('/') ? path : `${path}/`) as keyof typeof routes;
+  return routes[key] === true ? href : undefined;
+};
 ---
+
 <BaseLayout>
-  <main class="container">
-    <h1>{site.name}</h1>
-    <p>Website đang được xây dựng.</p>
+  <main>
+    <!-- 1: Hero (only H1 on the page) -->
+    <Hero
+      headline={site.name}
+      subtext="Thành viên Hệ thống Giáo dục Victoria"
+      primaryCta={{ label: 'Đăng ký tham quan', href: dangKyHref }}
+      {...(hasHotline ? { secondaryCta: { label: 'Gọi ngay', href: telHref } } : {})}
+    />
+
+    <!-- 2: reasons -->
+    {reasons.length > 0 && (
+      <CardGrid
+        cols={3}
+        cards={reasons.map((r) => ({ title: r.title, description: r.text, href: safeHref(r.href) }))}
+      />
+    )}
+
+    <!-- 3: news -->
     {news.length > 0 && (
-      <section>
-        <h2>Tin tức</h2>
-        <ul>
-          {news.map((n) => (
-            <li>
-              <strong>{n.data.title}</strong>
-              <time datetime={n.data.date.toISOString()}>
-                {n.data.date.toLocaleDateString('vi-VN')}
-              </time>
-              {n.data.summary && <p>{n.data.summary}</p>}
-            </li>
-          ))}
-        </ul>
+      <section class="news-section">
+        <div class="container">
+          <ul style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); padding: 0; list-style: none;">
+            {news.map((n) => (
+              <li>
+                <NewsCard entry={n} />
+              </li>
+            ))}
+          </ul>
+          <div style="margin-top: 1.5rem; text-align: center;">
+            {tinTucVisible && <a href="/tin-tuc/">Xem tất cả</a>}
+          </div>
+        </div>
       </section>
     )}
+
+    <!-- 4: notices -->
+    {activeNotices.length > 0 && (
+      <section class="notices-section">
+        <div class="container">
+          <ul style="display: grid; gap: 1rem; padding: 0; list-style: none;">
+            {activeNotices.map((n) => (
+              <li>
+                <NoticeItem entry={n} />
+              </li>
+            ))}
+          </ul>
+          <div style="margin-top: 1rem; text-align: center;">
+            {thongBaoVisible && <a href="/thong-bao/">Xem tất cả</a>}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- 5: facts -->
+    {facts.length > 0 && (
+      <CardGrid cols={3} cards={facts.map((f) => ({ title: f.title, description: f.text }))} />
+    )}
+
+    <!-- 6: MethodCards (only when the phuong-phap route is generated) -->
+    {methods.length > 0 && phuongPhapVisible && <MethodCards methods={methods} />}
+
+    <!-- 7: classes -->
+    {classItems.length > 0 && (
+      <section class="classes-section">
+        <div
+          class="container"
+          style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));"
+        >
+          {classItems.slice(0, 3).map((c) => (
+            <ClassCard
+              ageGroup={c.ageGroup}
+              className={c.className}
+              teacherName={c.teacherName}
+              schedule={c.schedule}
+              capacity={c.capacity}
+              ctaHref={safeHref(c.ctaHref)}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- 8: daily schedule -->
+    {scheduleItems.length > 0 && (
+      <Timeline
+        items={scheduleItems.map((d) => ({ date: d.time, title: d.activity, description: d.description }))}
+      />
+    )}
+
+    <!-- 9: weekly menu -->
+    {showMenu && latestMenu && latestWeekStart && (
+      <MenuTable weekStart={latestWeekStart} days={latestMenu.data.days} />
+    )}
+
+    <!-- 10: testimonials -->
+    {showTestimonials && <TestimonialTabs parents={parentTestimonials} teachers={[]} />}
+
+    <!-- 11: albums -->
+    {showAlbums && <AlbumTeaser limit={3} />}
+
+    <!-- 12: partners (self-hiding when partners.json is empty) -->
+    <PartnerStrip />
+
+    <!-- 13: CTA band -->
+    <section
+      class="cta-band"
+      style="text-align: center; padding: 3rem 1rem; background: var(--brand-soft, #f0fdf4);"
+    >
+      <div class="container">
+        <h2>Đặt lịch tham quan trường</h2>
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
+          <a
+            href={dangKyHref}
+            style="padding: 0.75rem 1.5rem; background: var(--brand); color: white; border-radius: 4px; text-decoration: none;"
+          >
+            Đăng ký tham quan
+          </a>
+          {hasHotline && (
+            <a
+              href={telHref}
+              style="padding: 0.75rem 1.5rem; border: 1px solid var(--brand); color: var(--brand); border-radius: 4px; text-decoration: none;"
+            >
+              Gọi ngay
+            </a>
+          )}
+        </div>
+      </div>
+    </section>
   </main>
 </BaseLayout>
