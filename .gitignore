@@ -22,3 +22,19 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# photo intake (scripts/import-photos.mjs): inbox copy and replaced originals
+photo-inbox/
+*.replaced
+
+# agent / editor tooling - local only, not published
+AGENTS.md
+CLAUDE.md
+.vscode/
+.opencode/
+.agents/
+.claude/
+
+# docs stay local; content collections are site source and stay tracked
+*.md
+!src/content/**/*.md

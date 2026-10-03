@@ -13,7 +13,10 @@
     "check": "astro check",
     "verify": "astro check && npm run build && node scripts/verify-approval.mjs && node scripts/verify-seo.mjs && node scripts/verify-libs.mjs && node scripts/verify-routes.mjs && node scripts/verify-contrast.mjs && node scripts/verify-demo.mjs && node scripts/verify-exif.mjs",
     "verify:approval": "node scripts/verify-approval.mjs",
-    "verify:libs": "node scripts/verify-libs.mjs"
+    "verify:libs": "node scripts/verify-libs.mjs",
+    "photos:shotlist": "node scripts/import-photos.mjs shotlist",
+    "photos:import": "node scripts/import-photos.mjs import",
+    "photos:apply": "node scripts/import-photos.mjs import --apply"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.2.1",
