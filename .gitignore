@@ -38,3 +38,4 @@ CLAUDE.md
 # docs stay local; content collections are site source and stay tracked
 *.md
 !src/content/**/*.md
+!/README.md
